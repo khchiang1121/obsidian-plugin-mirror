@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type MirrorInstallerPlugin from './main';
-import { fetchIndex, fetchVersions, type RegistryEntry } from './registry';
+import { fetchIndex, fetchVersions, type RegistryEntry, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate } from './versionCompare';
 import { installPluginVersion, removePlugin, type VaultAdapterLike, type PluginManagerLike } from './installer';
 
@@ -156,36 +156,99 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         .setName(entry.name)
         .setDesc(`${entry.description} — by ${entry.author} — latest v${entry.latestVersion ?? 'n/a'}`)
         .addButton((button) =>
-          button.setButtonText('Install').onClick(async () => {
-            try {
-              const versions = await fetchVersions(this.plugin.settings.mirrorBaseUrl, entry.repo, this.plugin.fetchFn);
-              const sorted = sortVersionsNewestFirst(versions.versions);
-              const candidate = selectUpdateCandidate(sorted, false);
-              if (!candidate) {
-                new Notice(`No installable version found for ${entry.name}`);
-                return;
+          button
+            .setButtonText('Install')
+            .setCta()
+            .onClick(async () => {
+              try {
+                const versions = await fetchVersions(this.plugin.settings.mirrorBaseUrl, entry.repo, this.plugin.fetchFn);
+                const sorted = sortVersionsNewestFirst(versions.versions);
+                const candidate = selectUpdateCandidate(sorted, false);
+                if (!candidate) {
+                  new Notice(`No installable version found for ${entry.name}`);
+                  return;
+                }
+                await this.installVersion(entry, candidate);
+              } catch (error) {
+                new Notice(`Failed to install ${entry.name}: ${(error as Error).message}`);
               }
-              await installPluginVersion(
-                this.getAdapter(),
-                this.getPluginManager(),
-                this.plugin.settings.mirrorBaseUrl,
-                entry.id,
-                { repo: entry.repo, version: candidate.version, files: candidate.files },
-                this.plugin.fetchFn
-              );
-              this.plugin.settings.trackedPlugins[entry.id] = {
-                repo: entry.repo,
-                installedVersion: candidate.version,
-                allowPrerelease: false,
-              };
-              await this.plugin.saveSettings();
-              new Notice(`Installed ${entry.name} v${candidate.version}`);
-              this.display();
-            } catch (error) {
-              new Notice(`Failed to install ${entry.name}: ${(error as Error).message}`);
-            }
-          })
+            })
         );
+
+      const versionRow = containerEl.createEl('div');
+      versionRow.style.textAlign = 'right';
+      versionRow.style.marginTop = '-0.6rem';
+      versionRow.style.marginBottom = '0.8rem';
+      const pickVersionLink = versionRow.createEl('a', { text: 'Install a specific version…', href: '#' });
+      pickVersionLink.style.fontSize = '0.8em';
+      pickVersionLink.style.opacity = '0.7';
+      pickVersionLink.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        pickVersionLink.remove();
+        void this.renderVersionPicker(versionRow, entry);
+      });
+    }
+  }
+
+  /**
+   * Deliberately tucked behind a small, muted link rather than shown next to
+   * the main Install button — most installs should just be one click on
+   * "Install" (latest), not a version choice the user has to make first.
+   */
+  private async renderVersionPicker(containerEl: HTMLElement, entry: RegistryEntry): Promise<void> {
+    containerEl.setText('Loading versions…');
+    let sorted: VersionEntry[];
+    try {
+      const versions = await fetchVersions(this.plugin.settings.mirrorBaseUrl, entry.repo, this.plugin.fetchFn);
+      sorted = sortVersionsNewestFirst(versions.versions);
+    } catch (error) {
+      containerEl.setText(`Failed to load versions: ${(error as Error).message}`);
+      return;
+    }
+
+    containerEl.empty();
+    if (sorted.length === 0) {
+      containerEl.setText('No versions available.');
+      return;
+    }
+
+    const select = containerEl.createEl('select');
+    for (const version of sorted) {
+      select.createEl('option', {
+        value: version.version,
+        text: version.prerelease ? `${version.version} (prerelease)` : version.version,
+      });
+    }
+
+    const installButton = containerEl.createEl('button', { text: 'Install' });
+    installButton.style.marginLeft = '0.5rem';
+    installButton.addEventListener('click', async () => {
+      const chosen = sorted.find((v) => v.version === select.value);
+      if (!chosen) return;
+      await this.installVersion(entry, chosen);
+    });
+  }
+
+  private async installVersion(entry: RegistryEntry, candidate: VersionEntry): Promise<void> {
+    try {
+      await installPluginVersion(
+        this.getAdapter(),
+        this.getPluginManager(),
+        this.plugin.settings.mirrorBaseUrl,
+        entry.id,
+        { repo: entry.repo, version: candidate.version, files: candidate.files },
+        this.plugin.fetchFn
+      );
+      this.plugin.settings.trackedPlugins[entry.id] = {
+        repo: entry.repo,
+        installedVersion: candidate.version,
+        allowPrerelease: false,
+      };
+      await this.plugin.saveSettings();
+      new Notice(`Installed ${entry.name} v${candidate.version}`);
+      this.display();
+    } catch (error) {
+      new Notice(`Failed to install ${entry.name}: ${(error as Error).message}`);
     }
   }
 }

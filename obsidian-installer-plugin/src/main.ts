@@ -60,6 +60,7 @@ export default class MirrorInstallerPlugin extends Plugin {
 
     if (this.settings.autoInstallUpdates && updatesAvailable.length > 0) {
       const installedIds: string[] = [];
+      const failedIds: string[] = [];
       for (const result of updatesAvailable) {
         if (!result.candidate) continue;
         const tracked = this.settings.trackedPlugins[result.pluginId];
@@ -78,16 +79,23 @@ export default class MirrorInstallerPlugin extends Plugin {
           this.pendingUpdates.delete(result.pluginId);
         } catch (error) {
           console.error(`Failed to auto-install update for ${result.pluginId}`, error);
+          failedIds.push(result.pluginId);
         }
       }
       if (installedIds.length > 0) {
         await this.saveSettings();
         new Notice(`Updated ${installedIds.length} mirrored plugin(s): ${installedIds.join(', ')}`);
       }
+      if (failedIds.length > 0) {
+        new Notice(`Failed to auto-install ${failedIds.length} mirrored plugin update(s): ${failedIds.join(', ')}`);
+      }
     }
 
-    for (const errorResult of errors) {
-      console.error(`Update check failed for ${errorResult.pluginId}: ${errorResult.error}`);
+    if (errors.length > 0) {
+      for (const errorResult of errors) {
+        console.error(`Update check failed for ${errorResult.pluginId}: ${errorResult.error}`);
+      }
+      new Notice(`Failed to check updates for ${errors.length} mirrored plugin(s): ${errors.map((e) => e.pluginId).join(', ')}`);
     }
   }
 }
