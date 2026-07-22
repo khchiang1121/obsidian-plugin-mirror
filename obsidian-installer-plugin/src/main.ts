@@ -1,12 +1,16 @@
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, requestUrl } from 'obsidian';
 import { mergeSettings, type PluginSettings } from './settings';
 import { checkForUpdates, applyUpdate, type UpdateCheckResult } from './updater';
 import { MirrorInstallerSettingTab } from './settingsTab';
 import type { VaultAdapterLike, PluginManagerLike } from './installer';
+import { createObsidianFetch, type FetchLike } from './obsidianFetch';
 
 export default class MirrorInstallerPlugin extends Plugin {
   settings!: PluginSettings;
   pendingUpdates: Map<string, UpdateCheckResult> = new Map();
+  // requestUrl (not the page's fetch) so mirror requests aren't blocked by CORS
+  // in Obsidian's renderer — see obsidianFetch.ts.
+  fetchFn: FetchLike = createObsidianFetch(requestUrl);
 
   async onload(): Promise<void> {
     this.settings = mergeSettings(await this.loadData());
@@ -45,7 +49,7 @@ export default class MirrorInstallerPlugin extends Plugin {
   }
 
   async runUpdateCheck(): Promise<void> {
-    const results = await checkForUpdates(this.settings.mirrorBaseUrl, this.settings.trackedPlugins, fetch);
+    const results = await checkForUpdates(this.settings.mirrorBaseUrl, this.settings.trackedPlugins, this.fetchFn);
     const updatesAvailable = results.filter((r) => r.status === 'update-available');
     const errors = results.filter((r) => r.status === 'error');
 
@@ -67,7 +71,7 @@ export default class MirrorInstallerPlugin extends Plugin {
             result.pluginId,
             tracked.repo,
             result.candidate,
-            fetch
+            this.fetchFn
           );
           tracked.installedVersion = result.candidate.version;
           installedIds.push(result.pluginId);

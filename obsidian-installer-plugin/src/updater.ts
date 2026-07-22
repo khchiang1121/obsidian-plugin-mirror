@@ -2,6 +2,7 @@ import { fetchVersions, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate, isNewerThanInstalled } from './versionCompare';
 import { installPluginVersion, type VaultAdapterLike, type PluginManagerLike } from './installer';
 import type { TrackedPlugin } from './settings';
+import type { FetchLike } from './obsidianFetch';
 
 export interface UpdateCheckResult {
   pluginId: string;
@@ -13,7 +14,7 @@ export interface UpdateCheckResult {
 export async function checkForUpdates(
   mirrorBaseUrl: string,
   trackedPlugins: Record<string, TrackedPlugin>,
-  fetchFn: typeof fetch = fetch
+  fetchFn: FetchLike = fetch
 ): Promise<UpdateCheckResult[]> {
   const results: UpdateCheckResult[] = [];
 
@@ -44,7 +45,7 @@ export async function applyUpdate(
   pluginId: string,
   repo: string,
   candidate: VersionEntry,
-  fetchFn: typeof fetch = fetch
+  fetchFn: FetchLike = fetch
 ): Promise<void> {
   await installPluginVersion(
     adapter,

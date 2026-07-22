@@ -1,3 +1,5 @@
+import type { FetchLike } from './obsidianFetch';
+
 export interface RegistryEntry {
   id: string;
   name: string;
@@ -32,7 +34,7 @@ function trimTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
-export async function fetchIndex(mirrorBaseUrl: string, fetchFn: typeof fetch = fetch): Promise<RegistryIndex> {
+export async function fetchIndex(mirrorBaseUrl: string, fetchFn: FetchLike = fetch): Promise<RegistryIndex> {
   const url = `${trimTrailingSlash(mirrorBaseUrl)}/index.json`;
   const response = await fetchFn(url);
   if (!response.ok) {
@@ -44,7 +46,7 @@ export async function fetchIndex(mirrorBaseUrl: string, fetchFn: typeof fetch = 
 export async function fetchVersions(
   mirrorBaseUrl: string,
   repo: string,
-  fetchFn: typeof fetch = fetch
+  fetchFn: FetchLike = fetch
 ): Promise<VersionsData> {
   const url = `${trimTrailingSlash(mirrorBaseUrl)}/plugins/${repo}/versions.json`;
   const response = await fetchFn(url);

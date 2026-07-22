@@ -1,3 +1,5 @@
+import type { FetchLike } from './obsidianFetch';
+
 export interface VaultAdapterLike {
   mkdir(path: string): Promise<void>;
   write(path: string, data: string): Promise<void>;
@@ -21,7 +23,7 @@ export async function installPluginVersion(
   mirrorBaseUrl: string,
   pluginId: string,
   version: InstallableVersion,
-  fetchFn: typeof fetch = fetch
+  fetchFn: FetchLike = fetch
 ): Promise<void> {
   const pluginDir = `.obsidian/plugins/${pluginId}`;
   try {

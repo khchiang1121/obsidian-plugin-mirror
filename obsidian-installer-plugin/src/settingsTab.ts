@@ -98,7 +98,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
                 this.plugin.settings.mirrorBaseUrl,
                 id,
                 { repo: entry.repo, version: candidate.version, files: candidate.files },
-                fetch
+                this.plugin.fetchFn
               );
               entry.installedVersion = candidate.version;
               this.plugin.pendingUpdates.delete(id);
@@ -142,7 +142,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   private async renderRegistry(containerEl: HTMLElement): Promise<void> {
     let entries: RegistryEntry[];
     try {
-      const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, fetch);
+      const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
       entries = index.plugins;
     } catch (error) {
       containerEl.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
@@ -158,7 +158,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         .addButton((button) =>
           button.setButtonText('Install').onClick(async () => {
             try {
-              const versions = await fetchVersions(this.plugin.settings.mirrorBaseUrl, entry.repo, fetch);
+              const versions = await fetchVersions(this.plugin.settings.mirrorBaseUrl, entry.repo, this.plugin.fetchFn);
               const sorted = sortVersionsNewestFirst(versions.versions);
               const candidate = selectUpdateCandidate(sorted, false);
               if (!candidate) {
@@ -171,7 +171,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
                 this.plugin.settings.mirrorBaseUrl,
                 entry.id,
                 { repo: entry.repo, version: candidate.version, files: candidate.files },
-                fetch
+                this.plugin.fetchFn
               );
               this.plugin.settings.trackedPlugins[entry.id] = {
                 repo: entry.repo,
