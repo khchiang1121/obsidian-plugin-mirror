@@ -152,7 +152,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     for (const entry of entries) {
       if (this.plugin.settings.trackedPlugins[entry.id]) continue;
 
-      new Setting(containerEl)
+      const setting = new Setting(containerEl)
         .setName(entry.name)
         .setDesc(`${entry.description} — by ${entry.author} — latest v${entry.latestVersion ?? 'n/a'}`)
         .addButton((button) =>
@@ -175,10 +175,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
             })
         );
 
-      const versionRow = containerEl.createEl('div');
-      versionRow.style.textAlign = 'right';
-      versionRow.style.marginTop = '-0.6rem';
-      versionRow.style.marginBottom = '0.8rem';
+      // Nested inside the Setting's own description element (not appended as a
+      // sibling of containerEl) so it stays inside this plugin's row instead of
+      // floating below it.
+      const versionRow = setting.descEl.createEl('div');
+      versionRow.style.marginTop = '0.35rem';
       const pickVersionLink = versionRow.createEl('a', { text: 'Install a specific version…', href: '#' });
       pickVersionLink.style.fontSize = '0.8em';
       pickVersionLink.style.opacity = '0.7';
