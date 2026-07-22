@@ -28,7 +28,6 @@ const context = await esbuild.context({
   target: 'es2020',
   logLevel: 'info',
   sourcemap: prod ? false : 'inline',
-  treeshake: true,
   outfile: 'main.js',
 });
 
