@@ -6,6 +6,8 @@ import { installPluginVersion, removePlugin, type VaultAdapterLike, type PluginM
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
   plugin: MirrorInstallerPlugin;
+  private installedSearchQuery = '';
+  private registrySearchQuery = '';
 
   constructor(app: App, plugin: MirrorInstallerPlugin) {
     super(app, plugin);
@@ -70,9 +72,37 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
 
   private renderInstalledPlugins(containerEl: HTMLElement): void {
     const tracked = this.plugin.settings.trackedPlugins;
-    const ids = Object.keys(tracked);
-    if (ids.length === 0) {
+    if (Object.keys(tracked).length === 0) {
       containerEl.createEl('p', { text: 'No mirrored plugins installed yet.' });
+      return;
+    }
+
+    const searchEl = containerEl.createDiv();
+    const listEl = containerEl.createDiv();
+
+    new Setting(searchEl)
+      .setName('Search installed plugins')
+      .addSearch((search) =>
+        search
+          .setPlaceholder('Filter by plugin id…')
+          .setValue(this.installedSearchQuery)
+          .onChange((value) => {
+            this.installedSearchQuery = value;
+            this.renderInstalledList(listEl);
+          })
+      );
+
+    this.renderInstalledList(listEl);
+  }
+
+  private renderInstalledList(containerEl: HTMLElement): void {
+    containerEl.empty();
+    const tracked = this.plugin.settings.trackedPlugins;
+    const query = this.installedSearchQuery.trim().toLowerCase();
+    const ids = Object.keys(tracked).filter((id) => !query || id.toLowerCase().includes(query));
+
+    if (ids.length === 0) {
+      containerEl.createEl('p', { text: 'No installed plugins match your search.' });
       return;
     }
 
@@ -149,9 +179,45 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       return;
     }
 
-    for (const entry of entries) {
-      if (this.plugin.settings.trackedPlugins[entry.id]) continue;
+    const searchEl = containerEl.createDiv();
+    const listEl = containerEl.createDiv();
 
+    new Setting(searchEl)
+      .setName('Search available plugins')
+      .addSearch((search) =>
+        search
+          .setPlaceholder('Filter by name, description, or author…')
+          .setValue(this.registrySearchQuery)
+          .onChange((value) => {
+            this.registrySearchQuery = value;
+            this.renderRegistryList(listEl, entries);
+          })
+      );
+
+    this.renderRegistryList(listEl, entries);
+  }
+
+  private renderRegistryList(containerEl: HTMLElement, entries: RegistryEntry[]): void {
+    containerEl.empty();
+    const query = this.registrySearchQuery.trim().toLowerCase();
+    const filtered = entries.filter((entry) => {
+      if (this.plugin.settings.trackedPlugins[entry.id]) return false;
+      if (!query) return true;
+      return (
+        entry.name.toLowerCase().includes(query) ||
+        entry.description.toLowerCase().includes(query) ||
+        entry.author.toLowerCase().includes(query)
+      );
+    });
+
+    if (filtered.length === 0) {
+      containerEl.createEl('p', {
+        text: query ? 'No available plugins match your search.' : 'No plugins available.',
+      });
+      return;
+    }
+
+    for (const entry of filtered) {
       const setting = new Setting(containerEl)
         .setName(entry.name)
         .setDesc(`${entry.description} — by ${entry.author} — latest v${entry.latestVersion ?? 'n/a'}`)
