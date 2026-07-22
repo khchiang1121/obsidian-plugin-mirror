@@ -1,0 +1,15 @@
+{
+  "defaultRetain": 5,
+  "plugins": [
+    { "repo": "zsviczian/obsidian-excalidraw-plugin" },
+    { "repo": "blacksmithgu/obsidian-dataview" },
+    { "repo": "SilentVoid13/Templater" },
+    { "repo": "obsidian-tasks-group/obsidian-tasks" },
+    { "repo": "tgrosinger/advanced-tables-obsidian" },
+    { "repo": "liamcain/obsidian-calendar-plugin" },
+    { "repo": "mgmeyers/obsidian-kanban" },
+    { "repo": "scambier/obsidian-omnisearch" },
+    { "repo": "chhoumann/quickadd" },
+    { "repo": "vslinko/obsidian-outliner" }
+  ]
+}

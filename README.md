@@ -39,8 +39,8 @@ npm install
 cp tracked-plugins.example.json tracked-plugins.json   # then edit with real owner/repo entries
 export GITHUB_TOKEN=ghp_xxx                             # optional, raises the GitHub API rate limit
 npm run build:image                                      # fetches releases, then docker build
-docker run -d --name plugin-mirror -p 8080:80 obsidian-plugin-mirror
-curl http://localhost:8080/index.json
+docker run --rm -d --name plugin-mirror -p 8087:80 obsidian-plugin-mirror
+curl http://localhost:8087/index.json
 ```
 
 Re-running `npm run build:image` only downloads what changed and prunes anything that fell outside retention — it never re-fetches everything from scratch.
