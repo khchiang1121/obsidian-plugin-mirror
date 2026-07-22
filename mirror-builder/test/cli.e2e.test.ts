@@ -90,6 +90,71 @@ describe('run', () => {
     expect(existsSync(join(outDir, 'plugins', 'acme', 'plugin-broken'))).toBe(false);
   });
 
+  it('skips a plugin whose manifest.json is missing a required field, but still mirrors the rest', async () => {
+    server.use(
+      http.get('https://api.github.com/repos/acme/plugin-one/releases', () =>
+        HttpResponse.json([
+          {
+            tag_name: '1.0.0',
+            prerelease: false,
+            published_at: '2026-01-01T00:00:00Z',
+            created_at: '2026-01-01T00:00:00Z',
+            assets: [
+              { name: 'manifest.json', browser_download_url: 'https://assets.example.test/plugin-one/1.0.0/manifest.json' },
+              { name: 'main.js', browser_download_url: 'https://assets.example.test/plugin-one/1.0.0/main.js' },
+            ],
+          },
+        ])
+      ),
+      http.get('https://api.github.com/repos/acme/plugin-badmanifest/releases', () =>
+        HttpResponse.json([
+          {
+            tag_name: '1.0.0',
+            prerelease: false,
+            published_at: '2026-01-01T00:00:00Z',
+            created_at: '2026-01-01T00:00:00Z',
+            assets: [
+              {
+                name: 'manifest.json',
+                browser_download_url: 'https://assets.example.test/plugin-badmanifest/1.0.0/manifest.json',
+              },
+              { name: 'main.js', browser_download_url: 'https://assets.example.test/plugin-badmanifest/1.0.0/main.js' },
+            ],
+          },
+        ])
+      ),
+      http.get('https://assets.example.test/plugin-one/1.0.0/manifest.json', () =>
+        HttpResponse.text(manifestAsset('plugin-one', '1.0.0'))
+      ),
+      http.get('https://assets.example.test/plugin-one/1.0.0/main.js', () => HttpResponse.text('console.log("main");')),
+      http.get('https://assets.example.test/plugin-badmanifest/1.0.0/manifest.json', () =>
+        // Missing "author" and "description" — mirrors a real-world manifest.json that
+        // doesn't declare every field readManifestMetadata requires.
+        HttpResponse.text(JSON.stringify({ id: 'plugin-badmanifest', name: 'plugin-badmanifest' }))
+      ),
+      http.get('https://assets.example.test/plugin-badmanifest/1.0.0/main.js', () =>
+        HttpResponse.text('console.log("main");')
+      )
+    );
+
+    const configPath = join(tempDir, 'tracked-plugins.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        defaultRetain: 5,
+        plugins: [{ repo: 'acme/plugin-one' }, { repo: 'acme/plugin-badmanifest' }],
+      })
+    );
+    const outDir = join(tempDir, 'dist');
+
+    const exitCode = await run({ configPath, outDir });
+
+    expect(exitCode).toBe(0);
+    const index = JSON.parse(readFileSync(join(outDir, 'index.json'), 'utf-8'));
+    expect(index.plugins).toHaveLength(1);
+    expect(index.plugins[0].repo).toBe('acme/plugin-one');
+  });
+
   it('returns a non-zero exit code and writes nothing for an invalid config', async () => {
     const configPath = join(tempDir, 'tracked-plugins.json');
     writeFileSync(configPath, JSON.stringify({ defaultRetain: 5, plugins: [] }));

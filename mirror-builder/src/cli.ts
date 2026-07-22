@@ -85,7 +85,13 @@ async function processPlugin(
 
   const metadataSource = latestStable ?? retained[0];
   const manifestPath = join(pluginDir, metadataSource.version, 'manifest.json');
-  const metadata = readManifestMetadata(manifestPath);
+  let metadata;
+  try {
+    metadata = readManifestMetadata(manifestPath);
+  } catch (error) {
+    warnings.push(`Skipping ${entry.repo}: ${(error as Error).message}`);
+    return { warnings };
+  }
 
   return {
     warnings,
