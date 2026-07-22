@@ -1,0 +1,8 @@
+{
+  "defaultRetain": 5,
+  "plugins": [
+    { "repo": "acme/plugin-one" },
+    { "repo": "acme/plugin-two", "retain": 10 },
+    { "repo": "acme/plugin-three", "retain": "all" }
+  ]
+}

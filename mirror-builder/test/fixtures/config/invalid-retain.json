@@ -1,0 +1,4 @@
+{
+  "defaultRetain": 5,
+  "plugins": [{ "repo": "acme/plugin-one", "retain": -1 }]
+}

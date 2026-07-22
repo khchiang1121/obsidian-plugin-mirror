@@ -1,0 +1,4 @@
+{
+  "defaultRetain": 5,
+  "plugins": [{ "repo": "not-a-valid-repo-string" }]
+}
