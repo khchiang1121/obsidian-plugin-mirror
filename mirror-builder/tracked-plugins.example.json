@@ -1,0 +1,6 @@
+{
+  "defaultRetain": 5,
+  "plugins": [
+    { "repo": "owner/repo" }
+  ]
+}
