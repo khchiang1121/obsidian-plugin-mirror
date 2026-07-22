@@ -1,0 +1,581 @@
+<title>Obsidian Plugin Mirror</title>
+<style>
+  :root {
+    --paper: #eef2ef;
+    --paper-raised: #e4ebe7;
+    --line: #c3d0c9;
+    --line-strong: #9db0a5;
+    --ink: #10241e;
+    --ink-muted: #52685f;
+    --accent: #0e7a63;
+    --accent-ink: #ffffff;
+    --focus: #0e7a63;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0c1512;
+      --paper-raised: #101c17;
+      --line: #24352f;
+      --line-strong: #345349;
+      --ink: #e3ece8;
+      --ink-muted: #8ea298;
+      --accent: #2fd6ac;
+      --accent-ink: #06140f;
+      --focus: #2fd6ac;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0c1512;
+    --paper-raised: #101c17;
+    --line: #24352f;
+    --line-strong: #345349;
+    --ink: #e3ece8;
+    --ink-muted: #8ea298;
+    --accent: #2fd6ac;
+    --accent-ink: #06140f;
+    --focus: #2fd6ac;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Iowan Old Style, "Palatino Linotype", Palatino, Georgia, "Noto Serif", serif;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  .mono {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+
+  code, pre {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  code {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+    font-size: 0.87em;
+  }
+
+  .sheet {
+    position: relative;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+  }
+  .sheet::before, .sheet::after,
+  .sheet > .corner-tl, .sheet > .corner-br {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+  }
+  .sheet::before { /* top-left */
+    top: -1px; left: -1px;
+    border-top: 2px solid var(--accent);
+    border-left: 2px solid var(--accent);
+  }
+  .sheet::after { /* bottom-right */
+    bottom: -1px; right: -1px;
+    border-bottom: 2px solid var(--accent);
+    border-right: 2px solid var(--accent);
+  }
+
+  /* ---------- title block header ---------- */
+  .titleblock {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3.4rem 1.5rem 2.2rem;
+  }
+  .titleblock .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+  .titleblock h1 {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    font-size: clamp(1.7rem, 4.6vw, 2.5rem);
+    font-weight: 700;
+    margin: 0.5rem 0 0.9rem;
+    text-wrap: balance;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 1rem;
+    display: inline-block;
+  }
+  .titleblock p.lead {
+    max-width: 62ch;
+    color: var(--ink);
+    font-size: 1.08rem;
+    margin: 0 0 1.8rem;
+  }
+  .metarow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .metarow dl {
+    margin: 0;
+    padding: 0.7rem 1.4rem 0.7rem 0;
+    border-right: 1px solid var(--line);
+    min-width: 150px;
+    flex: 1;
+  }
+  .metarow dl:last-child { border-right: none; }
+  .metarow dt {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 0.25rem;
+  }
+  .metarow dd {
+    margin: 0;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.86rem;
+  }
+  .titleblock .links {
+    margin-top: 1.6rem;
+    display: flex;
+    gap: 1.4rem;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.86rem;
+  }
+  .titleblock .links a::before { content: "→ "; color: var(--accent); }
+
+  /* ---------- main / sheets ---------- */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+  }
+  section { margin-top: 3.6rem; }
+  .sheet-label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .sheet-label .rule { flex: 1; height: 1px; background: var(--line-strong); }
+  section h2 {
+    font-family: Iowan Old Style, "Palatino Linotype", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem;
+    text-wrap: balance;
+  }
+  section > p.dek {
+    color: var(--ink-muted);
+    margin: 0 0 1.6rem;
+    max-width: 62ch;
+  }
+
+  /* ---------- schematic diagram ---------- */
+  .schematic {
+    border: 1px solid var(--line);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: -1px -1px;
+    opacity: 1;
+    padding: 2.4rem 1.6rem;
+    overflow-x: auto;
+  }
+  .schematic-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-width: 660px;
+  }
+  .schem-box {
+    flex: 1;
+    background: var(--paper);
+    padding: 1.1rem 1.2rem;
+  }
+  .schem-box h3 {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.82rem;
+    margin: 0 0 0.5rem;
+  }
+  .schem-box p {
+    margin: 0;
+    font-size: 0.86rem;
+    color: var(--ink-muted);
+    font-family: Iowan Old Style, "Palatino Linotype", Georgia, serif;
+  }
+  .schem-link {
+    flex: 0 0 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+    padding: 0 0.4rem;
+  }
+  .schem-link .dashes {
+    width: 100%;
+    height: 0;
+    border-top: 2px dashed var(--line-strong);
+    margin-bottom: 0.5rem;
+    position: relative;
+  }
+  .schem-link .dashes::after {
+    content: "▸";
+    position: absolute;
+    right: -4px;
+    top: -9px;
+    color: var(--accent);
+  }
+
+  /* ---------- cards ---------- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.1rem;
+    margin-top: 1.4rem;
+  }
+  .card { padding: 1.3rem 1.4rem 1.4rem; }
+  .card h3 {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.92rem;
+    margin: 0 0 0.55rem;
+  }
+  .card p { margin: 0 0 0.9rem; color: var(--ink-muted); font-size: 0.94rem; }
+  .card .stack {
+    display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; padding: 0; list-style: none;
+  }
+  .card .stack li {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    color: var(--ink-muted);
+    border: 1px solid var(--line);
+    padding: 0.15rem 0.5rem;
+  }
+  .card a.go {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .card a.go::before { content: "→ "; }
+
+  /* ---------- quick start terminals ---------- */
+  .step {
+    margin-bottom: 1.7rem;
+  }
+  .step .step-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .step .step-num {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    color: var(--accent);
+    font-size: 0.8rem;
+  }
+  .step strong { font-size: 1.02rem; font-weight: 600; }
+  .step p { margin: 0.6rem 0 0; color: var(--ink); font-size: 0.96rem; }
+  .term {
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+  }
+  .term-bar {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding: 0.4rem 0.8rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .term pre {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    overflow-x: auto;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  .term code { background: none; border: none; padding: 0; }
+
+  /* ---------- limitations table ---------- */
+  .table-wrap { overflow-x: auto; }
+  table.limitations {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 480px;
+  }
+  table.limitations th, table.limitations td {
+    text-align: left;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.limitations th {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  table.limitations td:first-child { font-weight: 600; }
+
+  footer {
+    max-width: 900px;
+    margin: 3rem auto 0;
+    padding: 1.3rem 1.5rem 3rem;
+    border-top: 3px solid var(--accent);
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  footer a { color: var(--ink-muted); }
+
+  @media (max-width: 620px) {
+    .schematic-row { flex-direction: column; min-width: 0; }
+    .schem-link { flex-direction: row; padding: 0.5rem 0; }
+    .schem-link .dashes { border-top: none; border-left: 2px dashed var(--line-strong); width: 0; height: 20px; margin: 0 0.6rem; }
+    .schem-link .dashes::after { top: auto; bottom: -10px; right: -6px; content: "▾"; }
+    .metarow dl { border-right: none; border-bottom: 1px solid var(--line); }
+  }
+</style>
+
+<header class="titleblock">
+  <div class="eyebrow">Internal plugin distribution — offline &amp; restricted networks</div>
+  <h1>Obsidian Plugin Mirror</h1>
+  <p class="lead">
+    BRAT installs beta Obsidian plugins by talking straight to GitHub. On a
+    vault that can't reach <code>github.com</code>, that's a dead end. This
+    project mirrors plugin releases onto an internal static server, then
+    browses, installs, and updates them from inside the vault — GitHub is
+    never in the loop.
+  </p>
+  <div class="metarow">
+    <dl><dt>Replaces</dt><dd>BRAT (obsidian42-brat)</dd></dl>
+    <dl><dt>Built for</dt><dd>vaults with no GitHub access</dd></dl>
+    <dl><dt>Subsystems</dt><dd>2 — mirror-builder / installer</dd></dl>
+    <dl><dt>Contract</dt><dd>shared static-file format</dd></dl>
+  </div>
+  <div class="links">
+    <a href="https://github.com/khchiang1121/obsidian-plugin-mirror">Source on GitHub</a>
+    <a href="superpowers/specs/2026-07-23-mirror-format-design.md">Shared format spec</a>
+  </div>
+</header>
+
+<main>
+
+  <section>
+    <div class="sheet-label">Sheet 01<span class="rule"></span>the problem</div>
+    <h2>Same conventions as BRAT, minus the GitHub dependency</h2>
+    <p class="dek">
+      The release-asset layout (<code>manifest.json</code>, <code>main.js</code>,
+      optional <code>styles.css</code> / <code>manifest-beta.json</code>) and the
+      semver-with-fallback version sorting are carried over unchanged from BRAT,
+      so plugin authors need to change nothing. What changes is where the
+      installer looks: an internal mirror instead of <code>api.github.com</code>.
+    </p>
+  </section>
+
+  <section>
+    <div class="sheet-label">Sheet 02<span class="rule"></span>system diagram</div>
+    <h2>Two subsystems, one shared contract</h2>
+    <p class="dek">
+      mirror-builder and the installer plugin never talk to each other — only
+      through a static file format that nginx serves as-is. Either side can be
+      rebuilt independently as long as it honors that format.
+    </p>
+    <div class="schematic">
+      <div class="schematic-row">
+        <div class="schem-box sheet">
+          <h3>mirror-builder</h3>
+          <p>Outside the restricted network. Fetches tracked GitHub repos, writes the static tree.</p>
+        </div>
+        <div class="schem-link">
+          <div class="dashes"></div>
+          index.json<br />versions.json
+        </div>
+        <div class="schem-box sheet">
+          <h3>nginx</h3>
+          <p>Plain static file server. No custom logic — just serves what mirror-builder wrote.</p>
+        </div>
+        <div class="schem-link">
+          <div class="dashes"></div>
+          http only<br />no auth
+        </div>
+        <div class="schem-box sheet">
+          <h3>installer plugin</h3>
+          <p>Inside the restricted network. Browses, installs, updates — never touches GitHub.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sheet-label">Sheet 03<span class="rule"></span>the two subsystems</div>
+    <h2>What each half actually does</h2>
+    <div class="card-grid">
+      <div class="card sheet">
+        <h3>mirror-builder</h3>
+        <p>
+          A one-shot Node.js/TypeScript CLI. Reads a tracked-plugin config,
+          fetches releases via the GitHub API with bounded concurrency and an
+          optional token, sorts and retains versions, and writes a
+          spec-compliant static tree — ready to bake into an nginx image with
+          one npm script. Re-runs only fetch what's new and prune what fell
+          out of retention.
+        </p>
+        <ul class="stack">
+          <li>TypeScript</li>
+          <li>@octokit/rest</li>
+          <li>vitest · 37 tests</li>
+        </ul>
+        <a class="go" href="https://github.com/khchiang1121/obsidian-plugin-mirror/tree/main/mirror-builder">mirror-builder/</a>
+      </div>
+      <div class="card sheet">
+        <h3>obsidian-installer-plugin</h3>
+        <p>
+          A standard Obsidian community plugin. Lists everything in the
+          mirror's registry with an Install action, tracks installed mirrored
+          plugins independently of Obsidian's own manifest, and checks for
+          updates on startup and on demand — respecting a per-plugin
+          prerelease opt-in and independently toggleable auto-check /
+          auto-install settings.
+        </p>
+        <ul class="stack">
+          <li>TypeScript</li>
+          <li>esbuild</li>
+          <li>vitest · 30 tests</li>
+        </ul>
+        <a class="go" href="https://github.com/khchiang1121/obsidian-plugin-mirror/tree/main/obsidian-installer-plugin">obsidian-installer-plugin/</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sheet-label">Sheet 04<span class="rule"></span>quick start</div>
+    <h2>Build the mirror, then install the plugin</h2>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">01</span><strong>Configure and build the mirror</strong></div>
+      <div class="term">
+        <div class="term-bar">mirror-builder/</div>
+        <pre><code>npm install
+cp tracked-plugins.example.json tracked-plugins.json   # edit with real owner/repo entries
+export GITHUB_TOKEN=ghp_xxx                             # optional, raises the rate limit
+npm run build:image                                      # fetch releases, then docker build</code></pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">02</span><strong>Run it on the internal network</strong></div>
+      <div class="term">
+        <div class="term-bar">shell</div>
+        <pre><code>docker run -d --name plugin-mirror -p 8080:80 obsidian-plugin-mirror</code></pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">03</span><strong>Install the vault plugin</strong></div>
+      <div class="term">
+        <div class="term-bar">obsidian-installer-plugin/</div>
+        <pre><code>npm install
+npm run build   # typechecks, then bundles src/main.ts -> main.js</code></pre>
+      </div>
+      <p>
+        Copy <code>manifest.json</code>, <code>main.js</code>, and <code>versions.json</code>
+        into <code>&lt;vault&gt;/.obsidian/plugins/obsidian-mirror-installer/</code>, enable it
+        from Community Plugins, then set the mirror's address in the plugin's settings tab.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sheet-label">Sheet 05<span class="rule"></span>known limitations · v1</div>
+    <h2>What's deliberately out of scope for now</h2>
+    <div class="table-wrap">
+      <table class="limitations">
+        <tr><th>Limitation</th><th>Why it's fine for now</th></tr>
+        <tr>
+          <td>No file integrity checks</td>
+          <td>Checksums/signatures are noted in the format spec as a future
+              addition — the version-entry format has room for it without a
+              breaking change.</td>
+        </tr>
+        <tr>
+          <td>No access control / TLS</td>
+          <td>The mirror is assumed to run on a trusted internal network —
+              an nginx config concern, orthogonal to the file format.</td>
+        </tr>
+        <tr>
+          <td>A pruned version can 404</td>
+          <td>Only affects showing "what version am I on" — the install/update
+              flow itself is unaffected.</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sheet-label">Sheet 06<span class="rule"></span>further reading</div>
+    <h2>Design specs</h2>
+    <div class="card-grid">
+      <div class="card sheet">
+        <h3>Shared format</h3>
+        <p>Directory layout and JSON schemas — the only contract between the two subsystems.</p>
+        <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md">Read the spec</a>
+      </div>
+      <div class="card sheet">
+        <h3>mirror-builder design</h3>
+        <p>Pipeline, config schema, incremental-run behavior, error handling.</p>
+        <a class="go" href="superpowers/specs/2026-07-23-mirror-builder-design.md">Read the spec</a>
+      </div>
+      <div class="card sheet">
+        <h3>Installer plugin design</h3>
+        <p>Module breakdown, data model, browse/install/update/remove flows.</p>
+        <a class="go" href="superpowers/specs/2026-07-23-obsidian-installer-plugin-design.md">Read the spec</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>khchiang1121/obsidian-plugin-mirror</span>
+  <a href="https://github.com/khchiang1121/obsidian-plugin-mirror">github.com/khchiang1121/obsidian-plugin-mirror</a>
+</footer>
