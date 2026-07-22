@@ -28,6 +28,8 @@ it can be served by a plain nginx static file server.
 - Per-plugin metadata for the registry (`index.json`) is derived
   automatically from each plugin's own `manifest.json`, so the tracked-list
   config only needs to name the repo.
+- Re-running against an existing output directory only downloads what's
+  new — it doesn't re-fetch every asset from scratch every time.
 
 ## Non-goals
 
@@ -49,6 +51,35 @@ hand-rolling pagination/rate-limit retry logic would duplicate what octokit
 already does reliably. Repos are processed with bounded concurrency (a
 fixed constant, e.g. 5 at a time) rather than fully serial, so a tracked
 list of dozens of plugins doesn't take proportionally longer to build.
+
+### Incremental runs
+
+The release list always comes from a fresh GitHub API call — that's the
+only way to learn about new releases, so this happens on every run
+regardless of whether it's the first or the hundredth. What's skipped on
+repeat runs is the expensive part: re-downloading asset files that are
+already sitting in the output directory from a previous run.
+
+The output directory itself is the only state carried between runs — there
+is no separate cache file or database. This keeps the tool one-shot and
+daemon-free: state is just whatever's on disk from last time, and a missing
+output directory (first run, or a fresh checkout) is indistinguishable from
+"nothing cached yet."
+
+For each retained version (after sorting + retention are computed from the
+freshly-fetched release list): if
+`dist/plugins/<owner>/<repo>/<version>/` already exists and already
+contains every file the release is expected to have, downloading is skipped
+entirely and the existing files are reused as-is. Otherwise (new version,
+or a directory that's missing/incomplete) the assets are downloaded fresh.
+
+After the retained set for a plugin is finalized, any version directories
+already on disk under `dist/plugins/<owner>/<repo>/` that are *not* in that
+set are deleted. This is what keeps a shrinking `retain` count, or a
+release being deleted/unpublished upstream, correctly reflected in the
+output instead of leaving stale, no-longer-listed version directories
+behind — the output tree always matches what the current run's `versions.json`
+says exists, never a superset of it.
 
 ### Docker packaging
 
@@ -105,9 +136,15 @@ Node installed.
      semver. Newest first.
    - Apply retention: keep the first `retain` (or `defaultRetain`) entries
      after sorting; drop the rest. `"all"` means no truncation.
-   - Download the retained versions' assets (`manifest.json`, `main.js`,
-     and `styles.css`/`manifest-beta.json` if present) into
-     `dist/plugins/<owner>/<repo>/<version>/`.
+   - For each retained version: if its output directory already exists
+     with all expected files, skip downloading (reuse it as-is); otherwise
+     download its assets (`manifest.json`, `main.js`, and
+     `styles.css`/`manifest-beta.json` if present) into
+     `dist/plugins/<owner>/<repo>/<version>/` (see "Incremental runs"
+     above).
+   - Delete any pre-existing version directories under
+     `dist/plugins/<owner>/<repo>/` that fall outside the retained set
+     (handles retention shrinking and upstream-deleted releases).
    - Write that plugin's `versions.json`. `latest` points at the newest
      retained non-prerelease version; if none of the retained versions are
      non-prerelease, `latest` is `null`.
@@ -134,7 +171,7 @@ Node installed.
 | `config.ts` | Load and validate `tracked-plugins.json` |
 | `github.ts` | octokit client setup, release fetching, bounded-concurrency scheduling |
 | `versionSort.ts` | Pure functions: semver-with-fallback sort, retention truncation |
-| `assets.ts` | Determine which required/optional assets exist on a release; download them |
+| `assets.ts` | Determine which required/optional assets exist on a release; check whether a version's output directory is already complete; download when it isn't; prune retained-out version directories |
 | `manifestReader.ts` | Extract `index.json` fields from a downloaded `manifest.json` |
 | `writer.ts` | Write `index.json` / `versions.json` / version directories per the shared format spec |
 | `cli.ts` | Orchestrates the pipeline, collects warnings, prints the summary, sets exit code |
@@ -159,3 +196,10 @@ Node installed.
 - End-to-end — mock a handful of fake repos' full release data, run the CLI
   against them, and diff the resulting output tree against what the shared
   format spec requires.
+- Incremental-run scenarios — seed a `dist/` directory as if from a prior
+  run, then run the CLI again against updated mock release data, and
+  assert: (a) already-complete version directories are not re-downloaded
+  (no download calls made for them), (b) a newly-published release is
+  downloaded, (c) a version pushed outside the retention window by the new
+  run is deleted from disk, and (d) a release removed/unpublished upstream
+  is likewise deleted.
