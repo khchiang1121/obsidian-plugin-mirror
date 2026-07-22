@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   installPluginVersion,
   removePlugin,
+  readInstalledManifestVersion,
   type VaultAdapterLike,
   type PluginManagerLike,
 } from '../src/installer';
@@ -10,6 +11,7 @@ class FakeAdapter implements VaultAdapterLike {
   mkdirCalls: string[] = [];
   writeCalls: Array<{ path: string; data: string }> = [];
   rmdirCalls: Array<{ path: string; recursive: boolean }> = [];
+  files: Record<string, string> = {};
 
   async mkdir(path: string): Promise<void> {
     this.mkdirCalls.push(path);
@@ -19,6 +21,12 @@ class FakeAdapter implements VaultAdapterLike {
   }
   async rmdir(path: string, recursive: boolean): Promise<void> {
     this.rmdirCalls.push({ path, recursive });
+  }
+  async read(path: string): Promise<string> {
+    if (!(path in this.files)) {
+      throw new Error(`ENOENT: ${path}`);
+    }
+    return this.files[path];
   }
 }
 
@@ -117,6 +125,7 @@ describe('installPluginVersion', () => {
       },
       write: adapter.write.bind(adapter),
       rmdir: adapter.rmdir.bind(adapter),
+      read: adapter.read.bind(adapter),
     };
     const fetchFn = fakeFetch({ 'manifest.json': '{}' });
     await installPluginVersion(
@@ -136,5 +145,21 @@ describe('removePlugin', () => {
     await removePlugin(adapter, pluginManager, 'acme-plugin');
     expect(pluginManager.disabled).toEqual(['acme-plugin']);
     expect(adapter.rmdirCalls).toEqual([{ path: '.obsidian/plugins/acme-plugin', recursive: true }]);
+  });
+});
+
+describe('readInstalledManifestVersion', () => {
+  it('returns the version field from the on-disk manifest.json', async () => {
+    adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '2.3.4' });
+    expect(await readInstalledManifestVersion(adapter, 'acme-plugin')).toBe('2.3.4');
+  });
+
+  it('returns null when the manifest cannot be read', async () => {
+    expect(await readInstalledManifestVersion(adapter, 'missing-plugin')).toBeNull();
+  });
+
+  it('returns null when the manifest has no string version field', async () => {
+    adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ id: 'acme-plugin' });
+    expect(await readInstalledManifestVersion(adapter, 'acme-plugin')).toBeNull();
   });
 });
