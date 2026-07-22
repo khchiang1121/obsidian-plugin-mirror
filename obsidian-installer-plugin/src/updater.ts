@@ -1,6 +1,11 @@
 import { fetchVersions, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate, isNewerThanInstalled } from './versionCompare';
-import { installPluginVersion, type VaultAdapterLike, type PluginManagerLike } from './installer';
+import {
+  installPluginVersion,
+  readInstalledManifestVersion,
+  type VaultAdapterLike,
+  type PluginManagerLike,
+} from './installer';
 import type { TrackedPlugin } from './settings';
 import type { FetchLike } from './obsidianFetch';
 
@@ -14,12 +19,24 @@ export interface UpdateCheckResult {
 export async function checkForUpdates(
   mirrorBaseUrl: string,
   trackedPlugins: Record<string, TrackedPlugin>,
+  adapter: VaultAdapterLike,
   fetchFn: FetchLike = fetch
 ): Promise<UpdateCheckResult[]> {
   const results: UpdateCheckResult[] = [];
 
   for (const [pluginId, tracked] of Object.entries(trackedPlugins)) {
     try {
+      // Something other than this plugin (e.g. Obsidian's own built-in
+      // Community Plugins updater) may have changed the installed files
+      // directly, without going through our install/update code — so our
+      // cached installedVersion can drift from what's actually on disk.
+      // Re-read the real manifest.json as ground truth and self-heal the
+      // cache whenever it disagrees.
+      const actualVersion = await readInstalledManifestVersion(adapter, pluginId);
+      if (actualVersion && actualVersion !== tracked.installedVersion) {
+        tracked.installedVersion = actualVersion;
+      }
+
       const data = await fetchVersions(mirrorBaseUrl, tracked.repo, fetchFn);
       const sorted = sortVersionsNewestFirst(data.versions);
       const candidate = selectUpdateCandidate(sorted, tracked.allowPrerelease);

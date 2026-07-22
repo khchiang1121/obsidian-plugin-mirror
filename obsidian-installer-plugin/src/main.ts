@@ -49,7 +49,12 @@ export default class MirrorInstallerPlugin extends Plugin {
   }
 
   async runUpdateCheck(): Promise<void> {
-    const results = await checkForUpdates(this.settings.mirrorBaseUrl, this.settings.trackedPlugins, this.fetchFn);
+    const results = await checkForUpdates(
+      this.settings.mirrorBaseUrl,
+      this.settings.trackedPlugins,
+      this.getAdapter(),
+      this.fetchFn
+    );
     const updatesAvailable = results.filter((r) => r.status === 'update-available');
     const errors = results.filter((r) => r.status === 'error');
 
@@ -58,9 +63,9 @@ export default class MirrorInstallerPlugin extends Plugin {
       this.pendingUpdates.set(result.pluginId, result);
     }
 
+    const installedIds: string[] = [];
+    const failedIds: string[] = [];
     if (this.settings.autoInstallUpdates && updatesAvailable.length > 0) {
-      const installedIds: string[] = [];
-      const failedIds: string[] = [];
       for (const result of updatesAvailable) {
         if (!result.candidate) continue;
         const tracked = this.settings.trackedPlugins[result.pluginId];
@@ -82,15 +87,19 @@ export default class MirrorInstallerPlugin extends Plugin {
           failedIds.push(result.pluginId);
         }
       }
-      if (installedIds.length > 0) {
-        await this.saveSettings();
-        new Notice(`Updated ${installedIds.length} mirrored plugin(s): ${installedIds.join(', ')}`);
-      }
-      if (failedIds.length > 0) {
-        new Notice(`Failed to auto-install ${failedIds.length} mirrored plugin update(s): ${failedIds.join(', ')}`);
-      }
     }
 
+    // Persist unconditionally: checkForUpdates may have self-healed a stale
+    // installedVersion (e.g. after Obsidian's own updater changed a plugin
+    // behind our back) even on a run where nothing else changed.
+    await this.saveSettings();
+
+    if (installedIds.length > 0) {
+      new Notice(`Updated ${installedIds.length} mirrored plugin(s): ${installedIds.join(', ')}`);
+    }
+    if (failedIds.length > 0) {
+      new Notice(`Failed to auto-install ${failedIds.length} mirrored plugin update(s): ${failedIds.join(', ')}`);
+    }
     if (errors.length > 0) {
       for (const errorResult of errors) {
         console.error(`Update check failed for ${errorResult.pluginId}: ${errorResult.error}`);

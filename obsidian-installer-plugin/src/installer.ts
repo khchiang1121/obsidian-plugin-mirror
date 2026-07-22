@@ -4,6 +4,7 @@ export interface VaultAdapterLike {
   mkdir(path: string): Promise<void>;
   write(path: string, data: string): Promise<void>;
   rmdir(path: string, recursive: boolean): Promise<void>;
+  read(path: string): Promise<string>;
 }
 
 export interface PluginManagerLike {
@@ -44,6 +45,25 @@ export async function installPluginVersion(
   }
 
   await pluginManager.enablePlugin(pluginId);
+}
+
+/**
+ * Reads the version actually on disk for an installed plugin, straight from
+ * its manifest.json — the ground truth Obsidian itself uses. Returns null if
+ * it can't be read (plugin folder missing/corrupt), so callers can fall back
+ * to their own cached belief about what's installed.
+ */
+export async function readInstalledManifestVersion(
+  adapter: VaultAdapterLike,
+  pluginId: string
+): Promise<string | null> {
+  try {
+    const raw = await adapter.read(`.obsidian/plugins/${pluginId}/manifest.json`);
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return typeof parsed.version === 'string' ? parsed.version : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function removePlugin(
