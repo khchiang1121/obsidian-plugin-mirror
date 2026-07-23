@@ -1,5 +1,6 @@
 {
   "defaultRetain": 5,
+  "defaultMinStableRetain": 5,
   "plugins": [
     { "repo": "zsviczian/obsidian-excalidraw-plugin" },
     { "repo": "blacksmithgu/obsidian-dataview" },
@@ -29,13 +30,21 @@
     { "repo": "darlal/obsidian-switcher-plus" },
     { "repo": "OliverBalfour/obsidian-pandoc" },
     { "repo": "phibr0/obsidian-commander" },
-    { "repo": "RyotaUshio/obsidian-text-extractor" },
+    { "repo": "scambier/obsidian-text-extractor" },
     { "repo": "hans/obsidian-citation-plugin" },
     { "repo": "aidenlx/alx-folder-note" },
     { "repo": "lynchjames/obsidian-mind-map" },
     { "repo": "nhaouari/obsidian-textgenerator-plugin" },
     { "repo": "Vinzent03/find-unlinked-files" },
     { "repo": "chrisgrieser/obsidian-smarter-md-hotkeys" },
-    { "repo": "gavvvr/obsidian-imgur-plugin" }
+    { "repo": "gavvvr/obsidian-imgur-plugin" },
+    { "repo": "deathau/cm-editor-syntax-highlight-obsidian" },
+    { "repo": "tnichols217/obsidian-columns" },
+    { "repo": "RainCat1998/obsidian-custom-attachment-location" },
+    { "repo": "akaalias/obsidian-footnotes" },
+    { "repo": "Aspharmyx/obsidian-password-protect" },
+    { "repo": "vslinko/obsidian-zoom" },
+    { "repo": "ganesshkumar/obsidian-table-editor" },
+    { "repo": "zsviczian/excalibrain"}
   ]
 }
