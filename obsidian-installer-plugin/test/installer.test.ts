@@ -259,4 +259,41 @@ describe('adoptUntrackedInstalledPlugins', () => {
       'other-plugin': { repo: 'other/plugin', installedVersion: '3.1.0', allowPrerelease: false, name: 'Other Plugin' },
     });
   });
+
+  it('checks disk reads concurrently rather than one at a time, and stays correct at scale', async () => {
+    const entryCount = 50;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const concurrentAdapter: VaultAdapterLike = {
+      ...adapter,
+      mkdir: adapter.mkdir.bind(adapter),
+      write: adapter.write.bind(adapter),
+      rmdir: adapter.rmdir.bind(adapter),
+      read: async (path: string) => {
+        inFlight++;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight--;
+        const match = /\.obsidian\/plugins\/([^/]+)\/manifest\.json$/.exec(path);
+        const id = match?.[1];
+        if (id && Number(id.replace('plugin-', '')) % 2 === 0) {
+          return JSON.stringify({ version: '1.0.0' });
+        }
+        throw new Error('ENOENT');
+      },
+    };
+
+    const entries = Array.from({ length: entryCount }, (_, i) =>
+      registryEntry({ id: `plugin-${i}`, repo: `acme/plugin-${i}`, name: `Plugin ${i}` })
+    );
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+
+    const adopted = await adoptUntrackedInstalledPlugins(concurrentAdapter, trackedPlugins, entries);
+
+    expect(maxInFlight).toBeGreaterThan(1);
+    expect(adopted.sort()).toEqual(
+      Array.from({ length: entryCount / 2 }, (_, i) => `plugin-${i * 2}`).sort()
+    );
+    expect(Object.keys(trackedPlugins)).toHaveLength(entryCount / 2);
+  });
 });

@@ -83,21 +83,26 @@ export async function adoptUntrackedInstalledPlugins(
   trackedPlugins: Record<string, TrackedPlugin>,
   registryEntries: RegistryEntry[]
 ): Promise<string[]> {
-  const adoptedIds: string[] = [];
-  for (const entry of registryEntries) {
-    const existing = trackedPlugins[entry.id];
-    if (existing) {
-      if (existing.name !== entry.name) {
-        existing.name = entry.name;
+  // Disk reads run concurrently rather than one at a time — with a
+  // several-hundred-entry registry, doing this sequentially made opening
+  // settings visibly slow (and, worse, made the rest of the page wait behind
+  // it) for no benefit, since each entry's check is independent.
+  const adoptedIds = await Promise.all(
+    registryEntries.map(async (entry): Promise<string | null> => {
+      const existing = trackedPlugins[entry.id];
+      if (existing) {
+        if (existing.name !== entry.name) {
+          existing.name = entry.name;
+        }
+        return null;
       }
-      continue;
-    }
-    const installedVersion = await readInstalledManifestVersion(adapter, entry.id);
-    if (!installedVersion) continue;
-    trackedPlugins[entry.id] = { repo: entry.repo, installedVersion, allowPrerelease: false, name: entry.name };
-    adoptedIds.push(entry.id);
-  }
-  return adoptedIds;
+      const installedVersion = await readInstalledManifestVersion(adapter, entry.id);
+      if (!installedVersion) return null;
+      trackedPlugins[entry.id] = { repo: entry.repo, installedVersion, allowPrerelease: false, name: entry.name };
+      return entry.id;
+    })
+  );
+  return adoptedIds.filter((id): id is string => id !== null);
 }
 
 export async function removePlugin(

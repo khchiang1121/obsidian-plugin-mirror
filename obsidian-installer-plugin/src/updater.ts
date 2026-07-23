@@ -36,35 +36,37 @@ export async function checkForUpdates(
     // surface their own errors individually.
   }
 
-  const results: UpdateCheckResult[] = [];
+  // Checked concurrently rather than one at a time — with a large tracked
+  // set this was a long chain of sequential network round-trips for no
+  // reason, since each plugin's check is independent of the others.
+  const results = await Promise.all(
+    Object.entries(trackedPlugins).map(async ([pluginId, tracked]): Promise<UpdateCheckResult> => {
+      try {
+        // Something other than this plugin (e.g. Obsidian's own built-in
+        // Community Plugins updater) may have changed the installed files
+        // directly, without going through our install/update code — so our
+        // cached installedVersion can drift from what's actually on disk.
+        // Re-read the real manifest.json as ground truth and self-heal the
+        // cache whenever it disagrees.
+        const actualVersion = await readInstalledManifestVersion(adapter, pluginId);
+        if (actualVersion && actualVersion !== tracked.installedVersion) {
+          tracked.installedVersion = actualVersion;
+        }
 
-  for (const [pluginId, tracked] of Object.entries(trackedPlugins)) {
-    try {
-      // Something other than this plugin (e.g. Obsidian's own built-in
-      // Community Plugins updater) may have changed the installed files
-      // directly, without going through our install/update code — so our
-      // cached installedVersion can drift from what's actually on disk.
-      // Re-read the real manifest.json as ground truth and self-heal the
-      // cache whenever it disagrees.
-      const actualVersion = await readInstalledManifestVersion(adapter, pluginId);
-      if (actualVersion && actualVersion !== tracked.installedVersion) {
-        tracked.installedVersion = actualVersion;
+        const data = await fetchVersions(mirrorBaseUrl, tracked.repo, fetchFn);
+        const sorted = sortVersionsNewestFirst(data.versions);
+        const candidate = selectUpdateCandidate(sorted, tracked.allowPrerelease);
+
+        if (!candidate || !isNewerThanInstalled(candidate, tracked.installedVersion, sorted)) {
+          return { pluginId, status: 'up-to-date' };
+        }
+
+        return { pluginId, status: 'update-available', candidate };
+      } catch (error) {
+        return { pluginId, status: 'error', error: (error as Error).message };
       }
-
-      const data = await fetchVersions(mirrorBaseUrl, tracked.repo, fetchFn);
-      const sorted = sortVersionsNewestFirst(data.versions);
-      const candidate = selectUpdateCandidate(sorted, tracked.allowPrerelease);
-
-      if (!candidate || !isNewerThanInstalled(candidate, tracked.installedVersion, sorted)) {
-        results.push({ pluginId, status: 'up-to-date' });
-        continue;
-      }
-
-      results.push({ pluginId, status: 'update-available', candidate });
-    } catch (error) {
-      results.push({ pluginId, status: 'error', error: (error as Error).message });
-    }
-  }
+    })
+  );
 
   return results;
 }

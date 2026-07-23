@@ -281,6 +281,37 @@ describe('checkForUpdates', () => {
 
     expect(results).toEqual([{ pluginId: 'plugin-one', status: 'up-to-date' }]);
   });
+
+  it('checks tracked plugins concurrently rather than one at a time, and stays correct at scale', async () => {
+    const pluginCount = 30;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    server.use(
+      http.get(`${MIRROR}/plugins/acme/:repo/versions.json`, async ({ params }) => {
+        inFlight++;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight--;
+        return HttpResponse.json({
+          repo: `acme/${params.repo}`,
+          latest: null,
+          versions: [
+            { version: '2.0.0', prerelease: false, publishedAt: '2026-03-01T00:00:00Z', files: ['manifest.json', 'main.js'] },
+          ],
+        });
+      })
+    );
+    const tracked: Record<string, TrackedPlugin> = {};
+    for (let i = 0; i < pluginCount; i++) {
+      tracked[`plugin-${i}`] = { repo: `acme/plugin-${i}`, installedVersion: '1.0.0', allowPrerelease: false };
+    }
+
+    const results = await checkForUpdates(MIRROR, tracked, new FakeAdapter());
+
+    expect(maxInFlight).toBeGreaterThan(1);
+    expect(results).toHaveLength(pluginCount);
+    expect(results.every((r) => r.status === 'update-available')).toBe(true);
+  });
 });
 
 describe('applyUpdate', () => {
