@@ -23,8 +23,12 @@ export const en = {
   'installed.status.upToDate': 'Installed v{version}',
   'installed.status.updateAvailable': 'Installed v{version} — update available: v{newVersion}',
   'installed.button.installUpdate': 'Install update',
-  'installed.toggle.allowPrerelease': 'Allow prerelease versions',
+  'installed.button.advanced': 'Advanced',
   'installed.button.remove': 'Remove',
+  'installed.badge.prerelease': '[ Pre-release ]',
+  'installed.advanced.heading': '{name} advanced settings',
+  'installed.advanced.allowPrerelease.label': 'Allow Pre-release versions',
+  'installed.advanced.allowPrerelease.desc': 'Enable this to receive the latest beta updates. Beta versions may be unstable.',
 
   'registry.heading': 'Available in mirror',
   'registry.loading': 'Loading…',

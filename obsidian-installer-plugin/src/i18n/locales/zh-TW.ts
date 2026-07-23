@@ -25,8 +25,12 @@ export const zhTW: Record<keyof typeof en, string> = {
   'installed.status.upToDate': '已安裝 v{version}',
   'installed.status.updateAvailable': '已安裝 v{version} — 有可用更新：v{newVersion}',
   'installed.button.installUpdate': '安裝更新',
-  'installed.toggle.allowPrerelease': '允許預發布版本',
+  'installed.button.advanced': '進階',
   'installed.button.remove': '移除',
+  'installed.badge.prerelease': '[ Pre-release ]',
+  'installed.advanced.heading': '{name} 進階設定',
+  'installed.advanced.allowPrerelease.label': '允許安裝 Pre-release 版本',
+  'installed.advanced.allowPrerelease.desc': '開啟此選項以接收最新的測試版更新。測試版可能不穩定。',
 
   'registry.heading': '鏡像上可用的外掛',
   'registry.loading': '載入中…',

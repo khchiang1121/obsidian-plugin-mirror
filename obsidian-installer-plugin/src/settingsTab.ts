@@ -9,12 +9,15 @@ import {
   type PluginManagerLike,
 } from './installer';
 import { checkSelfUpdate, downloadSelfUpdate } from './selfUpdate';
+import type { TrackedPlugin } from './settings';
 import { t } from './i18n';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
   plugin: MirrorInstallerPlugin;
   private installedSearchQuery = '';
   private registrySearchQuery = '';
+  private advancedPopoverEl: HTMLElement | null = null;
+  private advancedPopoverCleanup: (() => void) | null = null;
 
   constructor(app: App, plugin: MirrorInstallerPlugin) {
     super(app, plugin);
@@ -29,7 +32,15 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     return (this.app as unknown as { plugins: PluginManagerLike }).plugins;
   }
 
+  hide(): void {
+    // The popover is attached to document.body (see openAdvancedPopover), so
+    // it wouldn't otherwise be cleaned up by Obsidian closing this tab's own
+    // containerEl.
+    this.closeAdvancedPopover();
+  }
+
   display(): void {
+    this.closeAdvancedPopover();
     const { containerEl } = this;
     containerEl.empty();
 
@@ -238,6 +249,99 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     this.renderInstalledList(listEl);
   }
 
+  /**
+   * Plain text + a DocumentFragment badge rather than a single translated
+   * string, so the badge can carry its own inline styling without needing a
+   * new stylesheet — see the file-level note on inline styles elsewhere in
+   * this file (e.g. renderRegistryList's version-picker link).
+   */
+  private buildInstalledDesc(entry: TrackedPlugin, pending?: { candidate?: { version: string } }): DocumentFragment {
+    const frag = document.createDocumentFragment();
+    const text = pending?.candidate
+      ? t('installed.status.updateAvailable', { version: entry.installedVersion, newVersion: pending.candidate.version })
+      : t('installed.status.upToDate', { version: entry.installedVersion });
+    frag.appendChild(document.createTextNode(text));
+    if (entry.allowPrerelease) {
+      const badge = document.createElement('span');
+      badge.textContent = t('installed.badge.prerelease');
+      badge.style.marginLeft = '0.5rem';
+      badge.style.padding = '1px 8px';
+      badge.style.borderRadius = '10px';
+      badge.style.fontSize = '0.8em';
+      badge.style.fontWeight = '600';
+      badge.style.color = '#7c2d12';
+      badge.style.background = '#fed7aa';
+      frag.appendChild(badge);
+    }
+    return frag;
+  }
+
+  private closeAdvancedPopover(): void {
+    this.advancedPopoverCleanup?.();
+    this.advancedPopoverCleanup = null;
+    this.advancedPopoverEl?.remove();
+    this.advancedPopoverEl = null;
+  }
+
+  /**
+   * Obsidian doesn't expose a public component for an anchored popover with
+   * rich content (only the plain-list Menu class), so this is a small,
+   * self-contained one: a fixed-position div using Obsidian's own ".menu"
+   * class for native-looking chrome (border/shadow/background) without any
+   * custom CSS, holding a single Setting row for the actual control.
+   */
+  private openAdvancedPopover(anchorEl: HTMLElement, id: string, entry: TrackedPlugin): void {
+    const reopeningSameRow = this.advancedPopoverEl?.dataset.forId === id;
+    this.closeAdvancedPopover();
+    if (reopeningSameRow) return;
+
+    const rect = anchorEl.getBoundingClientRect();
+    const popover = document.body.createDiv({ cls: 'menu' });
+    popover.dataset.forId = id;
+    popover.style.position = 'fixed';
+    popover.style.top = `${rect.bottom + 4}px`;
+    popover.style.right = `${window.innerWidth - rect.right}px`;
+    popover.style.width = '300px';
+    popover.style.padding = '8px 12px';
+
+    popover.createDiv({
+      text: t('installed.advanced.heading', { name: entry.name ?? id }),
+    }).style.cssText = 'font-weight: 600; margin-bottom: 4px;';
+
+    new Setting(popover)
+      .setName(t('installed.advanced.allowPrerelease.label'))
+      .setDesc(t('installed.advanced.allowPrerelease.desc'))
+      .addToggle((toggle) =>
+        toggle.setValue(entry.allowPrerelease).onChange(async (value) => {
+          entry.allowPrerelease = value;
+          await this.plugin.saveSettings();
+          this.closeAdvancedPopover();
+          this.display();
+        })
+      );
+
+    this.advancedPopoverEl = popover;
+
+    const onDocClick = (evt: MouseEvent) => {
+      if (!popover.contains(evt.target as Node) && evt.target !== anchorEl && !anchorEl.contains(evt.target as Node)) {
+        this.closeAdvancedPopover();
+      }
+    };
+    const onKeydown = (evt: KeyboardEvent) => {
+      if (evt.key === 'Escape') this.closeAdvancedPopover();
+    };
+    // Deferred so the same click that opened the popover (which is still
+    // bubbling to document when this runs) doesn't immediately close it.
+    window.setTimeout(() => {
+      document.addEventListener('click', onDocClick, true);
+      document.addEventListener('keydown', onKeydown);
+    }, 0);
+    this.advancedPopoverCleanup = () => {
+      document.removeEventListener('click', onDocClick, true);
+      document.removeEventListener('keydown', onKeydown);
+    };
+  }
+
   private renderInstalledList(containerEl: HTMLElement): void {
     containerEl.empty();
     const tracked = this.plugin.settings.trackedPlugins;
@@ -258,16 +362,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     for (const id of ids) {
       const entry = tracked[id];
       const pending = this.plugin.pendingUpdates.get(id);
-      const setting = new Setting(containerEl)
-        .setName(entry.name ?? id)
-        .setDesc(
-          pending?.candidate
-            ? t('installed.status.updateAvailable', {
-                version: entry.installedVersion,
-                newVersion: pending.candidate.version,
-              })
-            : t('installed.status.upToDate', { version: entry.installedVersion })
-        );
+      const setting = new Setting(containerEl).setName(entry.name ?? id).setDesc(this.buildInstalledDesc(entry, pending));
 
       if (pending?.candidate) {
         const candidate = pending.candidate;
@@ -294,14 +389,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         );
       }
 
-      setting.addToggle((toggle) =>
-        toggle
-          .setValue(entry.allowPrerelease)
-          .setTooltip(t('installed.toggle.allowPrerelease'))
-          .onChange(async (value) => {
-            entry.allowPrerelease = value;
-            await this.plugin.saveSettings();
-          })
+      setting.addButton((button) =>
+        button.setButtonText(t('installed.button.advanced')).onClick((evt) => {
+          evt.stopPropagation();
+          this.openAdvancedPopover(button.buttonEl, id, entry);
+        })
       );
 
       setting.addButton((button) =>

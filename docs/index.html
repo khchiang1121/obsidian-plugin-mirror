@@ -549,7 +549,7 @@
       <span class="topbar-crumb" id="breadcrumb">Docs / <strong>Overview</strong></span>
     </div>
     <div class="topbar-right">
-      <span class="topbar-badge">installer v1.0.9</span>
+      <span class="topbar-badge">installer v1.0.10</span>
       <button class="lang-toggle" id="langToggle" aria-label="Switch language" title="Switch language / 切換語言">
         <span data-i18n="en">中文</span><span data-i18n="zh-TW">English</span>
       </button>
@@ -1146,6 +1146,14 @@ npm run build   <span class="cmt"><span data-i18n="en"># typechecks, then bundle
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-changelog">
       <h2><span data-i18n="en">Changelog</span><span data-i18n="zh-TW">更新日誌</span></h2>
+
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.10</div>
+        <h3><span data-i18n="en">Pre-release toggle moved out of the main row</span><span data-i18n="zh-TW">Pre-release 切換開關移出主要列表</span></h3>
+        <ul>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">The prerelease toggle sitting directly in each installed-plugin row was easy to mistake for an enable/disable switch for the plugin itself. It's now behind a new <strong>Advanced</strong> button (next to Remove), which opens a small popover labeled "Allow Pre-release versions" with a warning that beta versions may be unstable. When enabled, an orange <code>[ Pre-release ]</code> badge now appears next to the installed version in the row, so which plugins are on the beta channel is visible at a glance without opening anything.</span><span data-i18n="zh-TW">先前直接放在每個已安裝外掛列上的預發布版本切換開關，很容易被誤認為是該外掛本身的啟用／停用開關。現在它被移到一個新的<strong>進階</strong>按鈕之後（位於「移除」旁邊），點擊後會開啟一個小型彈出視窗，標示為「允許安裝 Pre-release 版本」，並附上測試版可能不穩定的警語。開啟後，該外掛列的已安裝版本旁會出現一個橘色的 <code>[ Pre-release ]</code>徽章，不需要另外點開任何東西，就能一眼看出哪些外掛正在接收測試版更新。</span></li>
+        </ul>
+      </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.9</div>
