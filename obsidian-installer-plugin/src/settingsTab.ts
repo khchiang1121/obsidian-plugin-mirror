@@ -2,7 +2,13 @@ import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type MirrorInstallerPlugin from './main';
 import { fetchIndex, fetchVersions, type RegistryEntry, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate } from './versionCompare';
-import { installPluginVersion, removePlugin, type VaultAdapterLike, type PluginManagerLike } from './installer';
+import {
+  installPluginVersion,
+  removePlugin,
+  adoptUntrackedInstalledPlugins,
+  type VaultAdapterLike,
+  type PluginManagerLike,
+} from './installer';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
   plugin: MirrorInstallerPlugin;
@@ -64,10 +70,38 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       );
 
     containerEl.createEl('h3', { text: 'Installed mirrored plugins' });
-    this.renderInstalledPlugins(containerEl);
+    const installedContainer = containerEl.createDiv();
 
     containerEl.createEl('h3', { text: 'Available in mirror' });
-    void this.renderRegistry(containerEl);
+    const registryContainer = containerEl.createDiv();
+
+    void this.loadPluginLists(installedContainer, registryContainer);
+  }
+
+  /**
+   * Fetches the registry once, adopts any plugin that's already installed on
+   * disk (via Obsidian's built-in browser, BRAT, or a manual copy) but not
+   * yet in trackedPlugins, then renders both lists off that shared state —
+   * so a just-adopted plugin shows as installed rather than still-available.
+   */
+  private async loadPluginLists(installedContainer: HTMLElement, registryContainer: HTMLElement): Promise<void> {
+    let entries: RegistryEntry[];
+    try {
+      const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
+      entries = index.plugins;
+    } catch (error) {
+      registryContainer.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
+      this.renderInstalledPlugins(installedContainer);
+      return;
+    }
+
+    const adoptedIds = await adoptUntrackedInstalledPlugins(this.getAdapter(), this.plugin.settings.trackedPlugins, entries);
+    if (adoptedIds.length > 0) {
+      await this.plugin.saveSettings();
+    }
+
+    this.renderInstalledPlugins(installedContainer);
+    this.renderRegistry(registryContainer, entries);
   }
 
   private renderInstalledPlugins(containerEl: HTMLElement): void {
@@ -169,16 +203,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     }
   }
 
-  private async renderRegistry(containerEl: HTMLElement): Promise<void> {
-    let entries: RegistryEntry[];
-    try {
-      const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
-      entries = index.plugins;
-    } catch (error) {
-      containerEl.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
-      return;
-    }
-
+  private renderRegistry(containerEl: HTMLElement, entries: RegistryEntry[]): void {
     const searchEl = containerEl.createDiv();
     const listEl = containerEl.createDiv();
 

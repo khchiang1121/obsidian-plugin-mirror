@@ -3,9 +3,12 @@ import {
   installPluginVersion,
   removePlugin,
   readInstalledManifestVersion,
+  adoptUntrackedInstalledPlugins,
   type VaultAdapterLike,
   type PluginManagerLike,
 } from '../src/installer';
+import type { RegistryEntry } from '../src/registry';
+import type { TrackedPlugin } from '../src/settings';
 
 class FakeAdapter implements VaultAdapterLike {
   mkdirCalls: string[] = [];
@@ -161,5 +164,76 @@ describe('readInstalledManifestVersion', () => {
   it('returns null when the manifest has no string version field', async () => {
     adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ id: 'acme-plugin' });
     expect(await readInstalledManifestVersion(adapter, 'acme-plugin')).toBeNull();
+  });
+});
+
+function registryEntry(overrides: Partial<RegistryEntry> = {}): RegistryEntry {
+  return {
+    id: 'acme-plugin',
+    name: 'Acme Plugin',
+    author: 'acme',
+    description: 'desc',
+    repo: 'acme/plugin',
+    latestVersion: '1.0.0',
+    latestPrerelease: null,
+    ...overrides,
+  };
+}
+
+describe('adoptUntrackedInstalledPlugins', () => {
+  it('adopts a registry plugin found on disk but not yet tracked', async () => {
+    adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '1.0.0' });
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+
+    const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [registryEntry()]);
+
+    expect(adopted).toEqual(['acme-plugin']);
+    expect(trackedPlugins['acme-plugin']).toEqual({
+      repo: 'acme/plugin',
+      installedVersion: '1.0.0',
+      allowPrerelease: false,
+    });
+  });
+
+  it('does not touch a plugin that is already tracked', async () => {
+    adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '2.0.0' });
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: true },
+    };
+
+    const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [registryEntry()]);
+
+    expect(adopted).toEqual([]);
+    expect(trackedPlugins['acme-plugin']).toEqual({
+      repo: 'acme/plugin',
+      installedVersion: '1.0.0',
+      allowPrerelease: true,
+    });
+  });
+
+  it('skips registry entries with no matching plugin folder on disk', async () => {
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+
+    const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [registryEntry()]);
+
+    expect(adopted).toEqual([]);
+    expect(trackedPlugins).toEqual({});
+  });
+
+  it('adopts multiple untracked plugins independently', async () => {
+    adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '1.0.0' });
+    adapter.files['.obsidian/plugins/other-plugin/manifest.json'] = JSON.stringify({ version: '3.1.0' });
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+
+    const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [
+      registryEntry(),
+      registryEntry({ id: 'other-plugin', repo: 'other/plugin' }),
+    ]);
+
+    expect(adopted.sort()).toEqual(['acme-plugin', 'other-plugin']);
+    expect(trackedPlugins).toEqual({
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: false },
+      'other-plugin': { repo: 'other/plugin', installedVersion: '3.1.0', allowPrerelease: false },
+    });
   });
 });

@@ -1,4 +1,6 @@
 import type { FetchLike } from './obsidianFetch';
+import type { RegistryEntry } from './registry';
+import type { TrackedPlugin } from './settings';
 
 export interface VaultAdapterLike {
   mkdir(path: string): Promise<void>;
@@ -64,6 +66,29 @@ export async function readInstalledManifestVersion(
   } catch {
     return null;
   }
+}
+
+/**
+ * Finds registry plugins that are already installed on disk (e.g. via
+ * Obsidian's built-in Community Plugins browser, BRAT, or a manual copy)
+ * but aren't yet in trackedPlugins, and folds them in — using the real
+ * on-disk manifest.json version as ground truth. Mutates trackedPlugins in
+ * place and returns the ids that were adopted.
+ */
+export async function adoptUntrackedInstalledPlugins(
+  adapter: VaultAdapterLike,
+  trackedPlugins: Record<string, TrackedPlugin>,
+  registryEntries: RegistryEntry[]
+): Promise<string[]> {
+  const adoptedIds: string[] = [];
+  for (const entry of registryEntries) {
+    if (trackedPlugins[entry.id]) continue;
+    const installedVersion = await readInstalledManifestVersion(adapter, entry.id);
+    if (!installedVersion) continue;
+    trackedPlugins[entry.id] = { repo: entry.repo, installedVersion, allowPrerelease: false };
+    adoptedIds.push(entry.id);
+  }
+  return adoptedIds;
 }
 
 export async function removePlugin(
