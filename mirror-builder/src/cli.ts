@@ -25,12 +25,12 @@ export function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
-interface PluginResult {
+export interface PluginResult {
   entry?: IndexJsonEntry;
   warnings: string[];
 }
 
-async function processPlugin(
+export async function processPlugin(
   entry: PluginConfigEntry,
   defaultRetain: number | 'all',
   defaultMinStableRetain: number,

@@ -2,7 +2,14 @@ import { App, Notice, PluginSettingTab, SearchComponent, Setting } from 'obsidia
 import type MirrorInstallerPlugin from './main';
 import { fetchIndex, fetchVersions, type RegistryEntry, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate } from './versionCompare';
-import { installPluginVersion, removePlugin, type VaultAdapterLike, type PluginManagerLike } from './installer';
+import {
+  installPluginVersion,
+  downloadPluginFiles,
+  removePlugin,
+  type VaultAdapterLike,
+  type PluginManagerLike,
+} from './installer';
+import { checkSelfUpdate } from './selfUpdate';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
   plugin: MirrorInstallerPlugin;
@@ -36,6 +43,15 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         })
       );
 
+    // This plugin's own version lives here, among the other global settings
+    // — not as a separate section, and not inside "Installed mirrored
+    // plugins" (which only ever lists *other* plugins; see checkForUpdates'
+    // excludeIds in main.ts). Filled in once loadPluginLists has the
+    // registry — see renderSelfVersionRow.
+    const selfVersionSetting = new Setting(containerEl)
+      .setName('Mirror Installer version')
+      .setDesc(`Installed v${this.plugin.manifest.version} — checking for updates…`);
+
     new Setting(containerEl)
       .setName('Check for updates on startup')
       .addToggle((toggle) =>
@@ -46,7 +62,10 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Install updates automatically')
+      .setName('Automatically install updates for mirrored plugins')
+      .setDesc(
+        "Applies to other plugins installed through this tool. Mirror Installer's own updates always require a manual click above, since applying one needs an Obsidian reload."
+      )
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.autoInstallUpdates).onChange(async (value) => {
           this.plugin.settings.autoInstallUpdates = value;
@@ -78,7 +97,13 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     const registryHeading = new Setting(registryGroup).setName('Available in mirror').setHeading();
     registryGroup.createEl('p', { text: 'Loading…' });
 
-    void this.loadPluginLists(installedGroup, installedHeading.settingEl, registryGroup, registryHeading.settingEl);
+    void this.loadPluginLists(
+      selfVersionSetting,
+      installedGroup,
+      installedHeading.settingEl,
+      registryGroup,
+      registryHeading.settingEl
+    );
   }
 
   /**
@@ -117,9 +142,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
    * to render on the very first paint, not just after a second open. Only
    * then fetches the registry for the "Available in mirror" list, since that
    * needs full entry metadata (name/description/author) the update check
-   * doesn't return.
+   * doesn't return. That same registry fetch is reused for this plugin's own
+   * version row, rather than a second, redundant fetch.
    */
   private async loadPluginLists(
+    selfVersionSetting: Setting,
     installedGroup: HTMLElement,
     installedHeadingEl: HTMLElement,
     registryGroup: HTMLElement,
@@ -132,14 +159,76 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
       entries = index.plugins;
     } catch (error) {
+      selfVersionSetting.setDesc(
+        `Installed v${this.plugin.manifest.version} — failed to check for updates: ${(error as Error).message}`
+      );
       this.clearGroupBody(registryGroup, registryHeadingEl);
       registryGroup.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
       this.renderInstalledPlugins(installedGroup, installedHeadingEl);
       return;
     }
 
+    const selfId = this.plugin.manifest.id;
+    const otherEntries = entries.filter((e) => e.id !== selfId);
+
+    await this.renderSelfVersionRow(selfVersionSetting, entries);
     this.renderInstalledPlugins(installedGroup, installedHeadingEl);
-    this.renderRegistry(registryGroup, registryHeadingEl, entries);
+    this.renderRegistry(registryGroup, registryHeadingEl, otherEntries);
+  }
+
+  /**
+   * Self-update is deliberately kept out of the generic Installed/Available
+   * flow (see checkForUpdates' excludeIds in main.ts): that flow's "Remove"
+   * button would delete this plugin's own running folder, and its "Install
+   * update" button calls enablePlugin on a plugin that's already enabled and
+   * currently executing — undefined behavior in Obsidian. This downloads the
+   * new files only, then asks the user to reload Obsidian to actually apply
+   * them, rather than attempting any in-place self-reload.
+   */
+  private async renderSelfVersionRow(setting: Setting, entries: RegistryEntry[]): Promise<void> {
+    const selfId = this.plugin.manifest.id;
+    const currentVersion = this.plugin.manifest.version;
+
+    const result = await checkSelfUpdate(this.plugin.settings.mirrorBaseUrl, entries, selfId, currentVersion, this.plugin.fetchFn);
+
+    if (result.status === 'not-in-registry') {
+      setting.setDesc(`Installed v${currentVersion} — not found in the mirror's registry.`);
+      return;
+    }
+    if (result.status === 'error') {
+      setting.setDesc(`Installed v${currentVersion} — failed to check for updates: ${result.error}`);
+      return;
+    }
+    if (result.status === 'up-to-date') {
+      setting.setDesc(`Installed v${currentVersion} — up to date.`);
+      return;
+    }
+
+    const candidate = result.candidate!;
+    const repo = result.repo!;
+    setting.setDesc(`Installed v${currentVersion} — update available: v${candidate.version}`);
+    setting.addButton((button) =>
+      button
+        .setButtonText('Update')
+        .setCta()
+        .onClick(async () => {
+          try {
+            await downloadPluginFiles(
+              this.getAdapter(),
+              this.plugin.settings.mirrorBaseUrl,
+              selfId,
+              { repo, version: candidate.version, files: candidate.files },
+              this.plugin.fetchFn
+            );
+            new Notice(
+              `Updated to v${candidate.version}. Reload Obsidian (Ctrl/Cmd+R, or restart) to apply the update.`,
+              10000
+            );
+          } catch (error) {
+            new Notice(`Failed to update: ${(error as Error).message}`);
+          }
+        })
+    );
   }
 
   private renderInstalledPlugins(groupEl: HTMLElement, headingEl: HTMLElement): void {
@@ -168,8 +257,10 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   private renderInstalledList(containerEl: HTMLElement): void {
     containerEl.empty();
     const tracked = this.plugin.settings.trackedPlugins;
+    const selfId = this.plugin.manifest.id;
     const query = this.installedSearchQuery.trim().toLowerCase();
     const ids = Object.keys(tracked).filter((id) => {
+      if (id === selfId) return false;
       if (!query) return true;
       const name = tracked[id].name;
       return id.toLowerCase().includes(query) || (name?.toLowerCase().includes(query) ?? false);

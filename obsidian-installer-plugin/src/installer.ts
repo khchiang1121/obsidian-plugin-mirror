@@ -20,9 +20,14 @@ export interface InstallableVersion {
   files: string[];
 }
 
-export async function installPluginVersion(
+/**
+ * Downloads a version's files into the plugin's folder without touching the
+ * plugin manager. Split out from installPluginVersion so a plugin can
+ * download its own update without calling enablePlugin on itself while it's
+ * the code currently executing — see selfUpdate.ts.
+ */
+export async function downloadPluginFiles(
   adapter: VaultAdapterLike,
-  pluginManager: PluginManagerLike,
   mirrorBaseUrl: string,
   pluginId: string,
   version: InstallableVersion,
@@ -45,7 +50,17 @@ export async function installPluginVersion(
     const content = await response.text();
     await adapter.write(`${pluginDir}/${file}`, content);
   }
+}
 
+export async function installPluginVersion(
+  adapter: VaultAdapterLike,
+  pluginManager: PluginManagerLike,
+  mirrorBaseUrl: string,
+  pluginId: string,
+  version: InstallableVersion,
+  fetchFn: FetchLike = fetch
+): Promise<void> {
+  await downloadPluginFiles(adapter, mirrorBaseUrl, pluginId, version, fetchFn);
   await pluginManager.enablePlugin(pluginId);
 }
 

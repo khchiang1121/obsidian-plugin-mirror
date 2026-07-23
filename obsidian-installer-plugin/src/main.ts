@@ -53,7 +53,8 @@ export default class MirrorInstallerPlugin extends Plugin {
       this.settings.mirrorBaseUrl,
       this.settings.trackedPlugins,
       this.getAdapter(),
-      this.fetchFn
+      this.fetchFn,
+      [this.manifest.id]
     );
     const updatesAvailable = results.filter((r) => r.status === 'update-available');
     const errors = results.filter((r) => r.status === 'error');

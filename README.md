@@ -56,6 +56,18 @@ npm run sync-top-plugins -- --replace-moved     # also update repos that transfe
 
 Ranks Obsidian's community plugins by download count (from `community-plugins.json` / `community-plugin-stats.json` in [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases)) and appends any not already tracked. It never removes an existing entry — a plugin whose repo appears to have moved (same repo name, different owner) is only reported, not swapped, unless you pass `--replace-moved`.
 
+#### Releasing a new obsidian-installer-plugin version without re-fetching everything else
+
+`obsidian-installer-plugin/` releases are deliberately **not** listed in `tracked-plugins.json` — cutting a new release of this plugin shouldn't require (or trigger) re-fetching all ~200 tracked open-source plugins. Instead, update just that one entry in an existing `dist/`:
+
+```bash
+cd mirror-builder
+npm run update-one -- --repo khchiang1121/obsidian-plugin-mirror --out dist
+docker build -t obsidian-plugin-mirror -f Dockerfile .
+```
+
+Fetches releases for exactly the repo passed to `--repo`, merges its entry into the existing `dist/index.json` in place, and leaves every other plugin's files and index entry untouched. `--retain`/`--min-stable-retain` work the same as the main config (defaults: `5` / `0`). Works for any single tracked repo, not just this plugin.
+
 ### Install the vault plugin (`obsidian-installer-plugin/`)
 
 ```bash

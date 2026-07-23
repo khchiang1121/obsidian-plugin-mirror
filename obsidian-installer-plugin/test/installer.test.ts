@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   installPluginVersion,
+  downloadPluginFiles,
   removePlugin,
   readInstalledManifestVersion,
   adoptUntrackedInstalledPlugins,
@@ -140,6 +141,38 @@ describe('installPluginVersion', () => {
       fetchFn
     );
     expect(pluginManager.enabled).toEqual(['acme-plugin']);
+  });
+});
+
+describe('downloadPluginFiles', () => {
+  it('writes each listed file without touching the plugin manager', async () => {
+    const fetchFn = fakeFetch({ 'manifest.json': '{"id":"acme"}', 'main.js': 'console.log(1)' });
+    await downloadPluginFiles(
+      adapter,
+      'https://plugins.internal.example.test',
+      'acme-plugin',
+      { repo: 'acme/plugin', version: '1.0.0', files: ['manifest.json', 'main.js'] },
+      fetchFn
+    );
+
+    expect(adapter.writeCalls).toEqual([
+      { path: '.obsidian/plugins/acme-plugin/manifest.json', data: '{"id":"acme"}' },
+      { path: '.obsidian/plugins/acme-plugin/main.js', data: 'console.log(1)' },
+    ]);
+    expect(pluginManager.enabled).toEqual([]);
+  });
+
+  it('throws when a download fails', async () => {
+    const fetchFn = fakeFetch({ 'manifest.json': '{}' }); // main.js missing -> 404
+    await expect(
+      downloadPluginFiles(
+        adapter,
+        'https://plugins.internal.example.test',
+        'acme-plugin',
+        { repo: 'acme/plugin', version: '1.0.0', files: ['manifest.json', 'main.js'] },
+        fetchFn
+      )
+    ).rejects.toThrow();
   });
 });
 

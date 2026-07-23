@@ -21,15 +21,20 @@ export async function checkForUpdates(
   mirrorBaseUrl: string,
   trackedPlugins: Record<string, TrackedPlugin>,
   adapter: VaultAdapterLike,
-  fetchFn: FetchLike = fetch
+  fetchFn: FetchLike = fetch,
+  excludeIds: string[] = []
 ): Promise<UpdateCheckResult[]> {
   try {
     // Pick up plugins installed by other means (Obsidian's built-in browser,
     // BRAT, a manual copy) before checking updates, so a fresh install found
     // this way gets its first update check in the same pass — not just the
-    // next time the settings tab happens to be opened.
+    // next time the settings tab happens to be opened. excludeIds keeps this
+    // plugin's own id out of adoption — see selfUpdate.ts for why it's
+    // handled as a separate, deliberate flow instead of the generic one.
     const index = await fetchIndex(mirrorBaseUrl, fetchFn);
-    await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, index.plugins);
+    const adoptable =
+      excludeIds.length === 0 ? index.plugins : index.plugins.filter((p) => !excludeIds.includes(p.id));
+    await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, adoptable);
   } catch {
     // Registry unreachable/unparseable — proceed with whatever's already
     // tracked; the per-plugin fetchVersions calls below still run and

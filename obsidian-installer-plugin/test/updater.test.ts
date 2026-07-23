@@ -312,6 +312,34 @@ describe('checkForUpdates', () => {
     expect(results).toHaveLength(pluginCount);
     expect(results.every((r) => r.status === 'update-available')).toBe(true);
   });
+
+  it('does not adopt a plugin whose id is in excludeIds, even if it is found on disk', async () => {
+    server.use(
+      http.get(`${MIRROR}/index.json`, () =>
+        HttpResponse.json({
+          generatedAt: '2026-01-01T00:00:00Z',
+          plugins: [
+            {
+              id: 'obsidian-mirror-installer',
+              name: 'Mirror Installer',
+              author: 'acme',
+              description: 'desc',
+              repo: 'acme/obsidian-plugin-mirror',
+              latestVersion: '2.0.0',
+              latestPrerelease: null,
+            },
+          ],
+        })
+      )
+    );
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+    const adapter = new FakeAdapter({ 'obsidian-mirror-installer': '1.0.0' });
+
+    const results = await checkForUpdates(MIRROR, trackedPlugins, adapter, fetch, ['obsidian-mirror-installer']);
+
+    expect(trackedPlugins).toEqual({});
+    expect(results).toEqual([]);
+  });
 });
 
 describe('applyUpdate', () => {
