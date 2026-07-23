@@ -2,13 +2,7 @@ import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type MirrorInstallerPlugin from './main';
 import { fetchIndex, fetchVersions, type RegistryEntry, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate } from './versionCompare';
-import {
-  installPluginVersion,
-  removePlugin,
-  adoptUntrackedInstalledPlugins,
-  type VaultAdapterLike,
-  type PluginManagerLike,
-} from './installer';
+import { installPluginVersion, removePlugin, type VaultAdapterLike, type PluginManagerLike } from './installer';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
   plugin: MirrorInstallerPlugin;
@@ -63,41 +57,43 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Check for updates now')
       .addButton((button) =>
-        button.setButtonText('Check now').onClick(async () => {
-          await this.plugin.runUpdateCheck();
+        button.setButtonText('Check now').onClick(() => {
           this.display();
         })
       );
 
     containerEl.createEl('h3', { text: 'Installed mirrored plugins' });
     const installedContainer = containerEl.createDiv();
+    installedContainer.createEl('p', { text: 'Checking installed mirrored plugins for updates…' });
 
     containerEl.createEl('h3', { text: 'Available in mirror' });
     const registryContainer = containerEl.createDiv();
+    registryContainer.createEl('p', { text: 'Loading…' });
 
     void this.loadPluginLists(installedContainer, registryContainer);
   }
 
   /**
-   * Fetches the registry once, adopts any plugin that's already installed on
-   * disk (via Obsidian's built-in browser, BRAT, or a manual copy) but not
-   * yet in trackedPlugins, then renders both lists off that shared state —
-   * so a just-adopted plugin shows as installed rather than still-available.
+   * Runs a full update check first (this adopts any plugin already installed
+   * on disk — via Obsidian's built-in browser, BRAT, or a manual copy — and
+   * populates plugin.pendingUpdates) so the "Install update" button has data
+   * to render on the very first paint, not just after a second open. Only
+   * then fetches the registry for the "Available in mirror" list, since that
+   * needs full entry metadata (name/description/author) the update check
+   * doesn't return.
    */
   private async loadPluginLists(installedContainer: HTMLElement, registryContainer: HTMLElement): Promise<void> {
+    await this.plugin.runUpdateCheck();
+
     let entries: RegistryEntry[];
     try {
       const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
       entries = index.plugins;
     } catch (error) {
+      registryContainer.empty();
       registryContainer.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
       this.renderInstalledPlugins(installedContainer);
       return;
-    }
-
-    const adoptedIds = await adoptUntrackedInstalledPlugins(this.getAdapter(), this.plugin.settings.trackedPlugins, entries);
-    if (adoptedIds.length > 0) {
-      await this.plugin.saveSettings();
     }
 
     this.renderInstalledPlugins(installedContainer);
@@ -105,6 +101,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   }
 
   private renderInstalledPlugins(containerEl: HTMLElement): void {
+    containerEl.empty();
     const tracked = this.plugin.settings.trackedPlugins;
     if (Object.keys(tracked).length === 0) {
       containerEl.createEl('p', { text: 'No mirrored plugins installed yet.' });
@@ -204,6 +201,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   }
 
   private renderRegistry(containerEl: HTMLElement, entries: RegistryEntry[]): void {
+    containerEl.empty();
     const searchEl = containerEl.createDiv();
     const listEl = containerEl.createDiv();
 
