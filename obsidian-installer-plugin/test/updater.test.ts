@@ -340,6 +340,30 @@ describe('checkForUpdates', () => {
     expect(trackedPlugins).toEqual({});
     expect(results).toEqual([]);
   });
+
+  it('self-heals a stale excludeIds entry already present in trackedPlugins, instead of checking it', async () => {
+    // Simulates a plugin id (e.g. this plugin's own) that ended up tracked
+    // before excludeIds existed, or from a mirror registry shape that no
+    // longer publishes an entry for it — checking it would 404 forever.
+    server.use(http.get(`${MIRROR}/index.json`, () => HttpResponse.json({ generatedAt: '2026-01-01T00:00:00Z', plugins: [] })));
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'obsidian-mirror-installer': { repo: 'acme/obsidian-plugin-mirror', installedVersion: '1.0.0', allowPrerelease: false },
+      'other-plugin': { repo: 'acme/other-plugin', installedVersion: '1.0.0', allowPrerelease: false },
+    };
+    server.use(
+      http.get(`${MIRROR}/plugins/acme/other-plugin/versions.json`, () =>
+        HttpResponse.json({ repo: 'acme/other-plugin', latest: null, versions: [] })
+      )
+    );
+    const adapter = new FakeAdapter();
+
+    const results = await checkForUpdates(MIRROR, trackedPlugins, adapter, fetch, ['obsidian-mirror-installer']);
+
+    expect(trackedPlugins).toEqual({
+      'other-plugin': { repo: 'acme/other-plugin', installedVersion: '1.0.0', allowPrerelease: false },
+    });
+    expect(results).toEqual([{ pluginId: 'other-plugin', status: 'up-to-date' }]);
+  });
 });
 
 describe('applyUpdate', () => {

@@ -24,6 +24,15 @@ export async function checkForUpdates(
   fetchFn: FetchLike = fetch,
   excludeIds: string[] = []
 ): Promise<UpdateCheckResult[]> {
+  // Self-heals a stale tracked entry for an excluded id — e.g. this
+  // plugin's own id, if it was ever adopted/installed before excludeIds
+  // existed, or from a mirror registry shape that no longer publishes an
+  // entry for it. Left in place, it would fail its per-plugin check below
+  // forever (see selfUpdate.ts for why self is never checked this way).
+  for (const id of excludeIds) {
+    delete trackedPlugins[id];
+  }
+
   try {
     // Pick up plugins installed by other means (Obsidian's built-in browser,
     // BRAT, a manual copy) before checking updates, so a fresh install found
