@@ -144,14 +144,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     for (const id of ids) {
       const entry = tracked[id];
       const pending = this.plugin.pendingUpdates.get(id);
-
-      // Grouped in their own wrapper so the primary row (name/actions) and
-      // the prerelease sub-row read as one plugin, with breathing room
-      // before the next plugin's group.
-      const group = containerEl.createDiv();
-      group.style.marginBottom = '0.75rem';
-
-      const setting = new Setting(group)
+      const setting = new Setting(containerEl)
         .setName(entry.name ?? id)
         .setDesc(
           pending?.candidate
@@ -184,6 +177,16 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         );
       }
 
+      setting.addToggle((toggle) =>
+        toggle
+          .setValue(entry.allowPrerelease)
+          .setTooltip('Allow prerelease versions')
+          .onChange(async (value) => {
+            entry.allowPrerelease = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
       setting.addButton((button) =>
         button.setButtonText('Remove').onClick(async () => {
           try {
@@ -198,21 +201,6 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
           }
         })
       );
-
-      // Its own sub-row with a real name, rather than a bare toggle on the
-      // primary row — a label-less toggle next to Install/Remove buttons
-      // reads like an enable/disable switch for the plugin itself.
-      const prereleaseSetting = new Setting(group).setName('Allow prerelease versions').addToggle((toggle) =>
-        toggle.setValue(entry.allowPrerelease).onChange(async (value) => {
-          entry.allowPrerelease = value;
-          await this.plugin.saveSettings();
-        })
-      );
-      prereleaseSetting.settingEl.style.borderTop = 'none';
-      prereleaseSetting.settingEl.style.paddingTop = '0';
-      prereleaseSetting.settingEl.style.paddingLeft = '1rem';
-      prereleaseSetting.nameEl.style.fontSize = '0.85em';
-      prereleaseSetting.nameEl.style.opacity = '0.75';
     }
   }
 
