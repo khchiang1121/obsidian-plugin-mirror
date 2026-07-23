@@ -109,7 +109,10 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     }
 
     const searchEl = containerEl.createDiv();
-    const listEl = containerEl.createDiv();
+    // Obsidian's own class for a set of related setting-items — on newer
+    // versions this is what makes .setting-item render as a plain
+    // border-top divider instead of each one being its own bordered card.
+    const listEl = containerEl.createDiv({ cls: 'setting-group' });
 
     new Setting(searchEl)
       .setName('Search installed plugins')
@@ -207,7 +210,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   private renderRegistry(containerEl: HTMLElement, entries: RegistryEntry[]): void {
     containerEl.empty();
     const searchEl = containerEl.createDiv();
-    const listEl = containerEl.createDiv();
+    const listEl = containerEl.createDiv({ cls: 'setting-group' });
 
     new Setting(searchEl)
       .setName('Search available plugins')
