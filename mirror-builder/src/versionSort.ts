@@ -25,7 +25,26 @@ export function sortReleasesNewestFirst<T extends ReleaseCandidate>(releases: T[
   return [...releases].sort(compareReleasesNewestFirst);
 }
 
-export function applyRetention<T>(sortedNewestFirst: T[], retain: number | 'all'): T[] {
+export function applyRetention<T extends ReleaseCandidate>(
+  sortedNewestFirst: T[],
+  retain: number | 'all',
+  minStableRetain = 0
+): T[] {
   if (retain === 'all') return [...sortedNewestFirst];
-  return sortedNewestFirst.slice(0, retain);
+
+  const window = sortedNewestFirst.slice(0, retain);
+  const stableCount = window.filter((r) => !r.prerelease).length;
+  const shortfall = minStableRetain - stableCount;
+  if (shortfall <= 0) return window;
+
+  const windowVersions = new Set(window.map((r) => r.version));
+  const extra: T[] = [];
+  for (const release of sortedNewestFirst.slice(retain)) {
+    if (extra.length >= shortfall) break;
+    if (!release.prerelease && !windowVersions.has(release.version)) {
+      extra.push(release);
+    }
+  }
+
+  return [...window, ...extra].sort(compareReleasesNewestFirst);
 }
