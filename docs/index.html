@@ -528,7 +528,7 @@
       <span class="topbar-crumb" id="breadcrumb">Docs / <strong>Overview</strong></span>
     </div>
     <div class="topbar-right">
-      <span class="topbar-badge">installer v1.0.5</span>
+      <span class="topbar-badge">installer v1.0.6</span>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">
         <span class="icon-moon">🌙</span>
         <span class="icon-sun">☀️</span>
@@ -1046,6 +1046,15 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
       <h2>Changelog</h2>
 
       <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.6</div>
+        <h3>Self-update, and a clearer global settings layout</h3>
+        <ul>
+          <li><span class="cl-tag cl-feat">Feature</span> A "Mirror Installer version" row in the global settings shows the installed version, and an inline <strong>Update</strong> button when a newer one is on the mirror — this plugin never appears in "Installed mirrored plugins" or "Available in mirror" like a regular tracked plugin, since that flow's "Remove" button would delete its own running folder. Update downloads the new files only; applying them still requires reloading Obsidian, since hot-swapping a plugin's own running code isn't safe to do in place.</li>
+          <li><span class="cl-tag cl-fix">Fix</span> "Install updates automatically" was ambiguous about whether it covered this plugin's own updates. Renamed to "Automatically install updates for mirrored plugins" with a description clarifying it only applies to other plugins.</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.5</div>
         <h3>Registry list not showing the full mirror, and slow to load</h3>
         <ul>
@@ -1098,6 +1107,7 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
         <div class="cl-date">mirror-builder</div>
         <h3>Ongoing fixes and tooling</h3>
         <ul>
+          <li><span class="cl-tag cl-feat">Feature</span> <code>update-one</code> script (<code>npm run update-one -- --repo &lt;owner/repo&gt;</code>) — fetches releases for exactly one repo and merges its entry into an existing <code>dist/index.json</code> in place, leaving every other plugin's files and index entry untouched. Exists so releasing obsidian-installer-plugin (deliberately not listed in <code>tracked-plugins.json</code>) never requires re-fetching the other ~200 tracked plugins.</li>
           <li><span class="cl-tag cl-feat">Feature</span> <code>sync-top-plugins</code> script (<code>npm run sync-top-plugins -- --top 200</code>) — ranks Obsidian's community plugins by download count and appends any not already tracked. Additive only by default; a repo that appears to have moved to a new owner is reported, not double-tracked, unless <code>--replace-moved</code> is passed.</li>
           <li><span class="cl-tag cl-feat">Feature</span> <code>tracked-plugins.json</code> expanded from 45 to 208 plugins — every plugin in the top 200 by download count.</li>
           <li><span class="cl-tag cl-feat">Feature</span> <code>defaultMinStableRetain</code> — a floor that guarantees N non-prerelease versions are always retained, even if a burst of prereleases would otherwise crowd them out of the plain <code>retain</code> window.</li>
