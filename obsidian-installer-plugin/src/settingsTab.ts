@@ -177,6 +177,14 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         );
       }
 
+      // A bare toggle here reads as "enable/disable this plugin" at a glance —
+      // it's easy to confuse with Obsidian's own plugin enable switch. Label
+      // it explicitly instead of relying on the hover-only tooltip.
+      const prereleaseLabel = setting.controlEl.createSpan({ text: 'Allow prerelease' });
+      prereleaseLabel.style.fontSize = '0.8em';
+      prereleaseLabel.style.opacity = '0.7';
+      prereleaseLabel.style.marginRight = '0.4rem';
+
       setting.addToggle((toggle) =>
         toggle
           .setValue(entry.allowPrerelease)
