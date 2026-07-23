@@ -204,4 +204,43 @@ describe('run', () => {
     expect(downloadCallLog).toHaveLength(2);
     expect(downloadCallLog.every((url) => url.includes('/2.0.0/'))).toBe(true);
   });
+
+  it('pulls in an older stable version to satisfy minStableRetain even though it falls outside retain', async () => {
+    registerAssetHandlers();
+    server.use(
+      http.get('https://api.github.com/repos/acme/plugin-one/releases', () =>
+        HttpResponse.json(
+          releasesResponse([
+            { tag: '2.0.0-beta.2', prerelease: true },
+            { tag: '2.0.0-beta.1', prerelease: true },
+            { tag: '1.0.0', prerelease: false },
+          ])
+        )
+      )
+    );
+
+    const configPath = join(tempDir, 'tracked-plugins.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        defaultRetain: 1,
+        defaultMinStableRetain: 1,
+        plugins: [{ repo: 'acme/plugin-one' }],
+      })
+    );
+    const outDir = join(tempDir, 'dist');
+
+    const exitCode = await run({ configPath, outDir });
+
+    expect(exitCode).toBe(0);
+    const versions = JSON.parse(
+      readFileSync(join(outDir, 'plugins', 'acme', 'plugin-one', 'versions.json'), 'utf-8')
+    );
+    expect(versions.versions.map((v: { version: string }) => v.version)).toEqual([
+      '2.0.0-beta.2',
+      '1.0.0',
+    ]);
+    expect(versions.latest).toBe('1.0.0');
+    expect(existsSync(join(outDir, 'plugins', 'acme', 'plugin-one', '1.0.0'))).toBe(true);
+  });
 });

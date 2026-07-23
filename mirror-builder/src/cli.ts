@@ -33,6 +33,7 @@ interface PluginResult {
 async function processPlugin(
   entry: PluginConfigEntry,
   defaultRetain: number | 'all',
+  defaultMinStableRetain: number,
   releasesResult: RepoFetchResult,
   outDir: string,
   token?: string
@@ -60,7 +61,8 @@ async function processPlugin(
 
   const sorted = sortReleasesNewestFirst(validated);
   const retain = entry.retain ?? defaultRetain;
-  const retained = applyRetention(sorted, retain);
+  const minStableRetain = entry.minStableRetain ?? defaultMinStableRetain;
+  const retained = applyRetention(sorted, retain, minStableRetain);
 
   const pluginDir = join(outDir, 'plugins', entry.repo);
   for (const version of retained) {
@@ -134,6 +136,7 @@ export async function run(options: CliOptions): Promise<number> {
     const result = await processPlugin(
       plugin,
       config.defaultRetain,
+      config.defaultMinStableRetain,
       releasesByRepo.get(plugin.repo)!,
       options.outDir,
       options.githubToken
