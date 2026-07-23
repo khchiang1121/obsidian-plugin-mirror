@@ -45,6 +45,7 @@
     { "repo": "Aspharmyx/obsidian-password-protect" },
     { "repo": "vslinko/obsidian-zoom" },
     { "repo": "ganesshkumar/obsidian-table-editor" },
-    { "repo": "zsviczian/excalibrain"}
+    { "repo": "zsviczian/excalibrain"},
+    { "repo": "dartungar/obsidian-mermaid"}
   ]
 }
