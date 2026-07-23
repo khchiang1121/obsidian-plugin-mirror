@@ -5,8 +5,13 @@ import { checkForUpdates, applyUpdate } from '../src/updater';
 import type { VaultAdapterLike, PluginManagerLike } from '../src/installer';
 import type { TrackedPlugin } from '../src/settings';
 
-const server = setupServer();
 const MIRROR = 'https://plugins.internal.example.test';
+
+// Default empty registry so tests that don't care about adoption don't need
+// to mock /index.json themselves; individual tests override with server.use().
+const server = setupServer(
+  http.get(`${MIRROR}/index.json`, () => HttpResponse.json({ generatedAt: '2026-01-01T00:00:00Z', plugins: [] }))
+);
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
@@ -189,6 +194,91 @@ describe('checkForUpdates', () => {
 
     expect(results).toEqual([{ pluginId: 'plugin-one', status: 'up-to-date' }]);
     expect(tracked.installedVersion).toBe('1.0.0');
+  });
+
+  it('adopts an untracked but on-disk plugin found in the registry and checks it for updates in the same pass', async () => {
+    server.use(
+      http.get(`${MIRROR}/index.json`, () =>
+        HttpResponse.json({
+          generatedAt: '2026-01-01T00:00:00Z',
+          plugins: [
+            {
+              id: 'plugin-one',
+              name: 'Plugin One',
+              author: 'acme',
+              description: 'desc',
+              repo: 'acme/plugin-one',
+              latestVersion: '2.0.0',
+              latestPrerelease: null,
+            },
+          ],
+        })
+      ),
+      versionsHandler('acme/plugin-one', [
+        { version: '2.0.0', prerelease: false, publishedAt: '2026-03-01T00:00:00Z', files: ['manifest.json', 'main.js'] },
+        { version: '1.0.0', prerelease: false, publishedAt: '2026-01-01T00:00:00Z', files: ['manifest.json', 'main.js'] },
+      ])
+    );
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+    const adapter = new FakeAdapter({ 'plugin-one': '1.0.0' });
+
+    const results = await checkForUpdates(MIRROR, trackedPlugins, adapter);
+
+    expect(trackedPlugins['plugin-one']).toEqual({
+      repo: 'acme/plugin-one',
+      installedVersion: '1.0.0',
+      allowPrerelease: false,
+    });
+    expect(results).toEqual([
+      {
+        pluginId: 'plugin-one',
+        status: 'update-available',
+        candidate: { version: '2.0.0', prerelease: false, publishedAt: '2026-03-01T00:00:00Z', files: ['manifest.json', 'main.js'] },
+      },
+    ]);
+  });
+
+  it('does not adopt a registry plugin that has no matching folder on disk', async () => {
+    server.use(
+      http.get(`${MIRROR}/index.json`, () =>
+        HttpResponse.json({
+          generatedAt: '2026-01-01T00:00:00Z',
+          plugins: [
+            {
+              id: 'plugin-not-installed',
+              name: 'Not Installed',
+              author: 'acme',
+              description: 'desc',
+              repo: 'acme/plugin-not-installed',
+              latestVersion: '1.0.0',
+              latestPrerelease: null,
+            },
+          ],
+        })
+      )
+    );
+    const trackedPlugins: Record<string, TrackedPlugin> = {};
+
+    const results = await checkForUpdates(MIRROR, trackedPlugins, new FakeAdapter());
+
+    expect(trackedPlugins).toEqual({});
+    expect(results).toEqual([]);
+  });
+
+  it('proceeds with existing tracked plugins when the registry index is unreachable', async () => {
+    server.use(
+      http.get(`${MIRROR}/index.json`, () => HttpResponse.json({}, { status: 500 })),
+      versionsHandler('acme/plugin-one', [
+        { version: '1.0.0', prerelease: false, publishedAt: '2026-01-01T00:00:00Z', files: ['manifest.json', 'main.js'] },
+      ])
+    );
+    const tracked: Record<string, TrackedPlugin> = {
+      'plugin-one': { repo: 'acme/plugin-one', installedVersion: '1.0.0', allowPrerelease: false },
+    };
+
+    const results = await checkForUpdates(MIRROR, tracked, new FakeAdapter());
+
+    expect(results).toEqual([{ pluginId: 'plugin-one', status: 'up-to-date' }]);
   });
 });
 

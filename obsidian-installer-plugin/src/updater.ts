@@ -1,8 +1,9 @@
-import { fetchVersions, type VersionEntry } from './registry';
+import { fetchIndex, fetchVersions, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate, isNewerThanInstalled } from './versionCompare';
 import {
   installPluginVersion,
   readInstalledManifestVersion,
+  adoptUntrackedInstalledPlugins,
   type VaultAdapterLike,
   type PluginManagerLike,
 } from './installer';
@@ -22,6 +23,19 @@ export async function checkForUpdates(
   adapter: VaultAdapterLike,
   fetchFn: FetchLike = fetch
 ): Promise<UpdateCheckResult[]> {
+  try {
+    // Pick up plugins installed by other means (Obsidian's built-in browser,
+    // BRAT, a manual copy) before checking updates, so a fresh install found
+    // this way gets its first update check in the same pass — not just the
+    // next time the settings tab happens to be opened.
+    const index = await fetchIndex(mirrorBaseUrl, fetchFn);
+    await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, index.plugins);
+  } catch {
+    // Registry unreachable/unparseable — proceed with whatever's already
+    // tracked; the per-plugin fetchVersions calls below still run and
+    // surface their own errors individually.
+  }
+
   const results: UpdateCheckResult[] = [];
 
   for (const [pluginId, tracked] of Object.entries(trackedPlugins)) {
