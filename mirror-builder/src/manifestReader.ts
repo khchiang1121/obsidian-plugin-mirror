@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 export interface PluginMetadata {
   id: string;
   name: string;
-  author: string;
+  author?: string;
   description: string;
 }
 
@@ -23,15 +23,18 @@ export function readManifestMetadata(manifestPath: string): PluginMetadata {
     throw new ManifestError(`manifest.json at ${manifestPath} is not valid JSON`);
   }
   const obj = parsed as Record<string, unknown>;
-  for (const field of ['id', 'name', 'author', 'description'] as const) {
+  for (const field of ['id', 'name', 'description'] as const) {
     if (typeof obj[field] !== 'string') {
       throw new ManifestError(`manifest.json at ${manifestPath} is missing required field "${field}"`);
     }
   }
+  if (obj.author !== undefined && typeof obj.author !== 'string') {
+    throw new ManifestError(`manifest.json at ${manifestPath} has an invalid "author" field`);
+  }
   return {
     id: obj.id as string,
     name: obj.name as string,
-    author: obj.author as string,
+    author: obj.author as string | undefined,
     description: obj.description as string,
   };
 }

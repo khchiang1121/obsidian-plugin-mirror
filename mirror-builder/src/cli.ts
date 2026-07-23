@@ -100,7 +100,7 @@ async function processPlugin(
     entry: {
       id: metadata.id,
       name: metadata.name,
-      author: metadata.author,
+      author: metadata.author ?? entry.repo.split('/')[0],
       description: metadata.description,
       repo: entry.repo,
       latestVersion: latestStable ? latestStable.version : null,

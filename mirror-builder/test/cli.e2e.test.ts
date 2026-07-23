@@ -128,8 +128,8 @@ describe('run', () => {
       ),
       http.get('https://assets.example.test/plugin-one/1.0.0/main.js', () => HttpResponse.text('console.log("main");')),
       http.get('https://assets.example.test/plugin-badmanifest/1.0.0/manifest.json', () =>
-        // Missing "author" and "description" — mirrors a real-world manifest.json that
-        // doesn't declare every field readManifestMetadata requires.
+        // Missing "description" — mirrors a real-world manifest.json that doesn't
+        // declare every field readManifestMetadata requires.
         HttpResponse.text(JSON.stringify({ id: 'plugin-badmanifest', name: 'plugin-badmanifest' }))
       ),
       http.get('https://assets.example.test/plugin-badmanifest/1.0.0/main.js', () =>
@@ -153,6 +153,34 @@ describe('run', () => {
     const index = JSON.parse(readFileSync(join(outDir, 'index.json'), 'utf-8'));
     expect(index.plugins).toHaveLength(1);
     expect(index.plugins[0].repo).toBe('acme/plugin-one');
+  });
+
+  it('falls back the index author to the repo owner when manifest.json omits it', async () => {
+    server.use(
+      http.get('https://api.github.com/repos/lynchjames/obsidian-mind-map/releases', () =>
+        HttpResponse.json(releasesResponse([{ tag: '1.1.0', prerelease: false }]))
+      ),
+      http.get('https://assets.example.test/1.1.0/manifest.json', () =>
+        HttpResponse.text(
+          JSON.stringify({ id: 'obsidian-mind-map', name: 'Mind Map', description: 'A plugin to preview notes as mind maps' })
+        )
+      ),
+      http.get('https://assets.example.test/1.1.0/main.js', () => HttpResponse.text('console.log("main");'))
+    );
+
+    const configPath = join(tempDir, 'tracked-plugins.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({ defaultRetain: 5, plugins: [{ repo: 'lynchjames/obsidian-mind-map' }] })
+    );
+    const outDir = join(tempDir, 'dist');
+
+    const exitCode = await run({ configPath, outDir });
+
+    expect(exitCode).toBe(0);
+    const index = JSON.parse(readFileSync(join(outDir, 'index.json'), 'utf-8'));
+    expect(index.plugins).toHaveLength(1);
+    expect(index.plugins[0].author).toBe('lynchjames');
   });
 
   it('returns a non-zero exit code and writes nothing for an invalid config', async () => {

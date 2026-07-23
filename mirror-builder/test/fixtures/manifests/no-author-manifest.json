@@ -1,0 +1,7 @@
+{
+  "id": "my-plugin-id",
+  "name": "My Plugin",
+  "version": "1.2.3",
+  "minAppVersion": "1.0.0",
+  "description": "What the plugin does"
+}

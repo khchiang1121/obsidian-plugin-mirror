@@ -14,6 +14,16 @@ describe('readManifestMetadata', () => {
     });
   });
 
+  it('extracts metadata with author undefined when the manifest omits it', () => {
+    const metadata = readManifestMetadata(fixture('no-author-manifest.json'));
+    expect(metadata).toEqual({
+      id: 'my-plugin-id',
+      name: 'My Plugin',
+      author: undefined,
+      description: 'What the plugin does',
+    });
+  });
+
   it('throws ManifestError when the file does not exist', () => {
     expect(() => readManifestMetadata(fixture('does-not-exist.json'))).toThrow(ManifestError);
   });
