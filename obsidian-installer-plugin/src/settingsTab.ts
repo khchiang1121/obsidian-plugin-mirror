@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, SearchComponent, Setting } from 'obsidian';
 import type MirrorInstallerPlugin from './main';
 import { fetchIndex, fetchVersions, type RegistryEntry, type VersionEntry } from './registry';
 import { sortVersionsNewestFirst, selectUpdateCandidate } from './versionCompare';
@@ -62,15 +62,52 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         })
       );
 
-    containerEl.createEl('h3', { text: 'Installed mirrored plugins' });
-    const installedContainer = containerEl.createDiv();
-    installedContainer.createEl('p', { text: 'Checking installed mirrored plugins for updates…' });
+    // Matches Obsidian's own native "Installed plugins" DOM exactly:
+    // .setting-group directly containing .setting-item.setting-item-heading,
+    // then the search row, then a .setting-items wrapper for the rows — all
+    // as direct children, no extra wrapper divs. Obsidian's grouped styling
+    // (padding/border reset) appears to key off that direct-child structure
+    // rather than matching any .setting-item at any depth, so an extra
+    // wrapper div in between (as an earlier version of this had) was enough
+    // to break the alignment between the heading and the rows.
+    const installedGroup = containerEl.createDiv({ cls: 'setting-group' });
+    const installedHeading = new Setting(installedGroup).setName('Installed mirrored plugins').setHeading();
+    installedGroup.createEl('p', { text: 'Checking installed mirrored plugins for updates…' });
 
-    containerEl.createEl('h3', { text: 'Available in mirror' });
-    const registryContainer = containerEl.createDiv();
-    registryContainer.createEl('p', { text: 'Loading…' });
+    const registryGroup = containerEl.createDiv({ cls: 'setting-group' });
+    const registryHeading = new Setting(registryGroup).setName('Available in mirror').setHeading();
+    registryGroup.createEl('p', { text: 'Loading…' });
 
-    void this.loadPluginLists(installedContainer, registryContainer);
+    void this.loadPluginLists(installedGroup, installedHeading.settingEl, registryGroup, registryHeading.settingEl);
+  }
+
+  /**
+   * Removes everything in a .setting-group except its heading row, so a
+   * re-render can rebuild the search box + items list as fresh direct
+   * children of the group without disturbing (or duplicating) the heading.
+   */
+  private clearGroupBody(groupEl: HTMLElement, headingEl: HTMLElement): void {
+    for (const child of Array.from(groupEl.children)) {
+      if (child !== headingEl) child.remove();
+    }
+  }
+
+  /**
+   * Obsidian's native group search bar is a bare SearchComponent inside
+   * .setting-group-search > .search-input-container — no name label, no
+   * .setting-item-control wrapper. A full Setting().addSearch() row (name +
+   * control) is a different, wider shape, which is why it looked oversized
+   * next to the native-structured heading/rows.
+   */
+  private createGroupSearch(
+    groupEl: HTMLElement,
+    placeholder: string,
+    value: string,
+    onChange: (value: string) => void
+  ): void {
+    const wrapper = groupEl.createDiv({ cls: 'setting-group-search' });
+    const inputContainer = wrapper.createDiv({ cls: 'search-input-container' });
+    new SearchComponent(inputContainer).setPlaceholder(placeholder).setValue(value).onChange(onChange);
   }
 
   /**
@@ -82,7 +119,12 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
    * needs full entry metadata (name/description/author) the update check
    * doesn't return.
    */
-  private async loadPluginLists(installedContainer: HTMLElement, registryContainer: HTMLElement): Promise<void> {
+  private async loadPluginLists(
+    installedGroup: HTMLElement,
+    installedHeadingEl: HTMLElement,
+    registryGroup: HTMLElement,
+    registryHeadingEl: HTMLElement
+  ): Promise<void> {
     await this.plugin.runUpdateCheck();
 
     let entries: RegistryEntry[];
@@ -90,42 +132,36 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
       entries = index.plugins;
     } catch (error) {
-      registryContainer.empty();
-      registryContainer.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
-      this.renderInstalledPlugins(installedContainer);
+      this.clearGroupBody(registryGroup, registryHeadingEl);
+      registryGroup.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
+      this.renderInstalledPlugins(installedGroup, installedHeadingEl);
       return;
     }
 
-    this.renderInstalledPlugins(installedContainer);
-    this.renderRegistry(registryContainer, entries);
+    this.renderInstalledPlugins(installedGroup, installedHeadingEl);
+    this.renderRegistry(registryGroup, registryHeadingEl, entries);
   }
 
-  private renderInstalledPlugins(containerEl: HTMLElement): void {
-    containerEl.empty();
+  private renderInstalledPlugins(groupEl: HTMLElement, headingEl: HTMLElement): void {
+    this.clearGroupBody(groupEl, headingEl);
     const tracked = this.plugin.settings.trackedPlugins;
     if (Object.keys(tracked).length === 0) {
-      containerEl.createEl('p', { text: 'No mirrored plugins installed yet.' });
+      groupEl.createEl('p', { text: 'No mirrored plugins installed yet.' });
       return;
     }
 
-    const searchEl = containerEl.createDiv();
-    // Obsidian's own class for a set of related setting-items — on newer
-    // versions this is what makes .setting-item render as a plain
-    // border-top divider instead of each one being its own bordered card.
-    const listEl = containerEl.createDiv({ cls: 'setting-group' });
+    // listEl is referenced inside the search callback below before its own
+    // declaration is reached — safe because the callback only runs later, on
+    // user input, by which point listEl is assigned. Declared after the
+    // search box (rather than before) so the two end up in the right visual
+    // order: search box above the items list, matching the native
+    // heading → search → items structure.
+    this.createGroupSearch(groupEl, 'Filter by name or plugin id…', this.installedSearchQuery, (value) => {
+      this.installedSearchQuery = value;
+      this.renderInstalledList(listEl);
+    });
 
-    new Setting(searchEl)
-      .setName('Search installed plugins')
-      .addSearch((search) =>
-        search
-          .setPlaceholder('Filter by name or plugin id…')
-          .setValue(this.installedSearchQuery)
-          .onChange((value) => {
-            this.installedSearchQuery = value;
-            this.renderInstalledList(listEl);
-          })
-      );
-
+    const listEl = groupEl.createDiv({ cls: 'setting-items' });
     this.renderInstalledList(listEl);
   }
 
@@ -207,22 +243,20 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     }
   }
 
-  private renderRegistry(containerEl: HTMLElement, entries: RegistryEntry[]): void {
-    containerEl.empty();
-    const searchEl = containerEl.createDiv();
-    const listEl = containerEl.createDiv({ cls: 'setting-group' });
+  private renderRegistry(groupEl: HTMLElement, headingEl: HTMLElement, entries: RegistryEntry[]): void {
+    this.clearGroupBody(groupEl, headingEl);
 
-    new Setting(searchEl)
-      .setName('Search available plugins')
-      .addSearch((search) =>
-        search
-          .setPlaceholder('Filter by name, description, or author…')
-          .setValue(this.registrySearchQuery)
-          .onChange((value) => {
-            this.registrySearchQuery = value;
-            this.renderRegistryList(listEl, entries);
-          })
-      );
+    // listEl is referenced inside the search callback below before its own
+    // declaration — safe, since the callback only runs later on user input,
+    // by which point listEl is assigned. Declared after the search box so
+    // DOM order stays search-box-above-items, matching the native
+    // heading → search → items structure.
+    this.createGroupSearch(groupEl, 'Filter by name, description, or author…', this.registrySearchQuery, (value) => {
+      this.registrySearchQuery = value;
+      this.renderRegistryList(listEl, entries);
+    });
+
+    const listEl = groupEl.createDiv({ cls: 'setting-items' });
 
     this.renderRegistryList(listEl, entries);
   }
