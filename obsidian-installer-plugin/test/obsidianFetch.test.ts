@@ -31,6 +31,10 @@ describe('createObsidianFetch', () => {
     const fetchFn = createObsidianFetch(requestUrlFn);
     const response = await fetchFn('https://plugins.internal.example.test/index.json');
     expect(response.status).toBe(500);
-    expect(capturedRequest).toEqual({ url: 'https://plugins.internal.example.test/index.json', throw: false });
+    expect(capturedRequest).toEqual({
+      url: 'https://plugins.internal.example.test/index.json',
+      throw: false,
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+    });
   });
 });

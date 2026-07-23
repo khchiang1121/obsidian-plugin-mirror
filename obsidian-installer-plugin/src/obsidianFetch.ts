@@ -19,7 +19,17 @@ export type FetchLike = (url: string) => Promise<FetchLikeResponse>;
  */
 export function createObsidianFetch(requestUrlFn: RequestUrlFn): FetchLike {
   return async (url: string) => {
-    const response = await requestUrlFn({ url, throw: false });
+    const response = await requestUrlFn({
+      url,
+      throw: false,
+      // Belt-and-suspenders alongside the cache-busting query param in
+      // registry.ts: Obsidian's requestUrl runs on Electron's Chromium
+      // network stack, which can otherwise cache and replay a stale
+      // response for the mirror's index.json/versions.json — files that are
+      // rewritten in place on every rebuild, with no way for a cached hit to
+      // signal it's stale.
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' },
+    });
     return {
       ok: response.status >= 200 && response.status < 300,
       status: response.status,

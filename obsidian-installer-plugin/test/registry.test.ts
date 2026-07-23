@@ -48,6 +48,21 @@ describe('fetchIndex', () => {
     server.use(http.get(`${MIRROR}/index.json`, () => HttpResponse.json({}, { status: 500 })));
     await expect(fetchIndex(MIRROR)).rejects.toThrow(RegistryError);
   });
+
+  it('appends a cache-busting query param, since Electron/Chromium can otherwise serve a stale cached response for a plain unchanging URL', async () => {
+    const capturedUrls: string[] = [];
+    server.use(
+      http.get(`${MIRROR}/index.json`, ({ request }) => {
+        capturedUrls.push(request.url);
+        return HttpResponse.json({ generatedAt: '2026-07-23T00:00:00Z', plugins: [] });
+      })
+    );
+    await fetchIndex(MIRROR);
+    await fetchIndex(MIRROR);
+
+    expect(new URL(capturedUrls[0]).searchParams.get('_')).toBeTruthy();
+    expect(capturedUrls[0]).not.toBe(capturedUrls[1]);
+  });
 });
 
 describe('fetchVersions', () => {
@@ -71,5 +86,20 @@ describe('fetchVersions', () => {
   it('throws RegistryError on a 404', async () => {
     server.use(http.get(`${MIRROR}/plugins/acme/missing/versions.json`, () => HttpResponse.json({}, { status: 404 })));
     await expect(fetchVersions(MIRROR, 'acme/missing')).rejects.toThrow(RegistryError);
+  });
+
+  it('appends a cache-busting query param, since Electron/Chromium can otherwise serve a stale cached response for a plain unchanging URL', async () => {
+    const capturedUrls: string[] = [];
+    server.use(
+      http.get(`${MIRROR}/plugins/acme/my-plugin/versions.json`, ({ request }) => {
+        capturedUrls.push(request.url);
+        return HttpResponse.json({ repo: 'acme/my-plugin', latest: null, versions: [] });
+      })
+    );
+    await fetchVersions(MIRROR, 'acme/my-plugin');
+    await fetchVersions(MIRROR, 'acme/my-plugin');
+
+    expect(new URL(capturedUrls[0]).searchParams.get('_')).toBeTruthy();
+    expect(capturedUrls[0]).not.toBe(capturedUrls[1]);
   });
 });
