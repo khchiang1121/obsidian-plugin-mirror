@@ -467,6 +467,27 @@
       padding: 4px;
     }
     @media (max-width: 768px) { .menu-btn { display: block; } }
+
+    /* ── LANGUAGE TOGGLE / DUAL-LANGUAGE CONTENT ── */
+    .lang-toggle {
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 0 12px;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .lang-toggle:hover { background: var(--bg); color: var(--text); border-color: var(--accent); }
+    html:not([data-lang="zh-TW"]) [data-i18n="zh-TW"] { display: none; }
+    html[data-lang="zh-TW"] [data-i18n="en"] { display: none; }
   </style>
 </head>
 <body>
@@ -475,43 +496,43 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <h1>🪞 Obsidian Plugin Mirror</h1>
-    <span>Documentation v1.0</span>
+    <span><span data-i18n="en">Documentation v1.0</span><span data-i18n="zh-TW">文件 v1.0</span></span>
   </div>
   <nav>
     <div class="nav-group">
-      <div class="nav-group-label">Getting Started</div>
+      <div class="nav-group-label"><span data-i18n="en">Getting Started</span><span data-i18n="zh-TW">入門</span></div>
       <a class="nav-link active" href="#" data-section="overview">
-        <span class="icon">🏠</span> Overview
+        <span class="icon">🏠</span> <span data-i18n="en">Overview</span><span data-i18n="zh-TW">概覽</span>
       </a>
       <a class="nav-link" href="#" data-section="quickstart">
-        <span class="icon">🚀</span> Quick Start
+        <span class="icon">🚀</span> <span data-i18n="en">Quick Start</span><span data-i18n="zh-TW">快速開始</span>
       </a>
     </div>
     <div class="nav-group">
-      <div class="nav-group-label">How It Works</div>
+      <div class="nav-group-label"><span data-i18n="en">How It Works</span><span data-i18n="zh-TW">運作方式</span></div>
       <a class="nav-link" href="#" data-section="architecture">
-        <span class="icon">🏗️</span> Architecture
+        <span class="icon">🏗️</span> <span data-i18n="en">Architecture</span><span data-i18n="zh-TW">架構</span>
       </a>
       <a class="nav-link" href="#" data-section="format">
-        <span class="icon">🔗</span> Shared Format
+        <span class="icon">🔗</span> <span data-i18n="en">Shared Format</span><span data-i18n="zh-TW">共用格式</span>
       </a>
     </div>
     <div class="nav-group">
-      <div class="nav-group-label">Reference</div>
+      <div class="nav-group-label"><span data-i18n="en">Reference</span><span data-i18n="zh-TW">參考資料</span></div>
       <a class="nav-link" href="#" data-section="plugins">
-        <span class="icon">📦</span> Tracked Plugins
+        <span class="icon">📦</span> <span data-i18n="en">Tracked Plugins</span><span data-i18n="zh-TW">追蹤的外掛</span>
       </a>
       <a class="nav-link" href="#" data-section="limitations">
-        <span class="icon">⚠️</span> Known Limitations
+        <span class="icon">⚠️</span> <span data-i18n="en">Known Limitations</span><span data-i18n="zh-TW">已知限制</span>
       </a>
     </div>
     <div class="nav-group">
-      <div class="nav-group-label">Project</div>
+      <div class="nav-group-label"><span data-i18n="en">Project</span><span data-i18n="zh-TW">專案</span></div>
       <a class="nav-link" href="#" data-section="specs">
-        <span class="icon">📖</span> Design Specs
+        <span class="icon">📖</span> <span data-i18n="en">Design Specs</span><span data-i18n="zh-TW">設計規格</span>
       </a>
       <a class="nav-link" href="#" data-section="changelog">
-        <span class="icon">📋</span> Changelog
+        <span class="icon">📋</span> <span data-i18n="en">Changelog</span><span data-i18n="zh-TW">更新日誌</span>
       </a>
     </div>
     <a class="nav-link" href="https://github.com/khchiang1121/obsidian-plugin-mirror" target="_blank" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;">
@@ -528,7 +549,10 @@
       <span class="topbar-crumb" id="breadcrumb">Docs / <strong>Overview</strong></span>
     </div>
     <div class="topbar-right">
-      <span class="topbar-badge">installer v1.0.6</span>
+      <span class="topbar-badge">installer v1.0.7</span>
+      <button class="lang-toggle" id="langToggle" aria-label="Switch language" title="Switch language / 切換語言">
+        <span data-i18n="en">中文</span><span data-i18n="zh-TW">English</span>
+      </button>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">
         <span class="icon-moon">🌙</span>
         <span class="icon-sun">☀️</span>
@@ -544,71 +568,95 @@
     <section class="section active" id="section-overview">
       <div class="hero">
         <h2>Obsidian Plugin Mirror</h2>
-        <p>An internal, GitHub-free replacement for <a href="https://github.com/TfTHacker/obsidian42-brat" target="_blank">BRAT</a>. BRAT installs beta plugins by talking straight to GitHub — on a vault inside a restricted network that can't reach <code>github.com</code>, that's a dead end. This project mirrors plugin releases onto an internally-hosted static server, then browses, installs, and updates them from an Obsidian plugin that only ever talks to that mirror.</p>
+        <p>
+          <span data-i18n="en">An internal, GitHub-free replacement for <a href="https://github.com/TfTHacker/obsidian42-brat" target="_blank">BRAT</a>. BRAT installs beta plugins by talking straight to GitHub — on a vault inside a restricted network that can't reach <code>github.com</code>, that's a dead end. This project mirrors plugin releases onto an internally-hosted static server, then browses, installs, and updates them from an Obsidian plugin that only ever talks to that mirror.</span>
+          <span data-i18n="zh-TW">一個不需要 GitHub 存取權限的內部替代方案，取代 <a href="https://github.com/TfTHacker/obsidian42-brat" target="_blank">BRAT</a>。BRAT 透過直接連線 GitHub 來安裝測試版外掛——但在無法連到 <code>github.com</code> 的受限網路內，這條路走不通。本專案將外掛的發布版本鏡像到內部託管的靜態伺服器上，再透過一個只會與該鏡像伺服器通訊的 Obsidian 外掛來瀏覽、安裝與更新它們。</span>
+        </p>
         <div class="hero-chips">
           <span class="chip chip-blue">TypeScript</span>
           <span class="chip chip-blue">Docker + nginx</span>
-          <span class="chip chip-green">Obsidian community plugin</span>
-          <span class="chip chip-yellow">Zero GitHub access required inside the vault</span>
+          <span class="chip chip-green"><span data-i18n="en">Obsidian community plugin</span><span data-i18n="zh-TW">Obsidian 社群外掛</span></span>
+          <span class="chip chip-yellow"><span data-i18n="en">Zero GitHub access required inside the vault</span><span data-i18n="zh-TW">保管庫內完全不需要存取 GitHub</span></span>
         </div>
       </div>
 
-      <h3>Two subsystems, one shared contract</h3>
-      <p>mirror-builder and the installer plugin never talk to each other directly — only through a static file format that nginx serves as-is. Either side can be rebuilt independently as long as it honors that format.</p>
+      <h3><span data-i18n="en">Two subsystems, one shared contract</span><span data-i18n="zh-TW">兩個子系統，一份共用契約</span></h3>
+      <p>
+        <span data-i18n="en">mirror-builder and the installer plugin never talk to each other directly — only through a static file format that nginx serves as-is. Either side can be rebuilt independently as long as it honors that format.</span>
+        <span data-i18n="zh-TW">mirror-builder 與 installer 外掛從不直接互相通訊——只透過 nginx 原樣提供的靜態檔案格式溝通。只要遵守這個格式，任一方都能獨立重建。</span>
+      </p>
 
       <div class="flow">
         <div class="flow-step">
-          <div class="flow-box accent">mirror-builder<br /><small>outside the network, talks to GitHub</small></div>
+          <div class="flow-box accent">mirror-builder<br /><small><span data-i18n="en">outside the network, talks to GitHub</span><span data-i18n="zh-TW">在網路之外，與 GitHub 通訊</span></small></div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step">
-          <div class="flow-box">nginx<br /><small>plain static file server</small></div>
+          <div class="flow-box">nginx<br /><small><span data-i18n="en">plain static file server</span><span data-i18n="zh-TW">純靜態檔案伺服器</span></small></div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step">
-          <div class="flow-box green">installer plugin<br /><small>inside the network, never touches GitHub</small></div>
+          <div class="flow-box green">installer plugin<br /><small><span data-i18n="en">inside the network, never touches GitHub</span><span data-i18n="zh-TW">在網路之內，完全不接觸 GitHub</span></small></div>
         </div>
       </div>
 
-      <h3>Key features</h3>
+      <h3><span data-i18n="en">Key features</span><span data-i18n="zh-TW">主要功能</span></h3>
       <div class="card-grid">
         <div class="card">
           <div class="card-icon">🔢</div>
-          <h4>Tunable retention</h4>
-          <p><code>defaultRetain</code> keeps the N newest versions; <code>defaultMinStableRetain</code> guarantees a floor of non-prerelease versions so a burst of betas can't crowd stable releases out entirely.</p>
+          <h4><span data-i18n="en">Tunable retention</span><span data-i18n="zh-TW">可調整的保留策略</span></h4>
+          <p>
+            <span data-i18n="en"><code>defaultRetain</code> keeps the N newest versions; <code>defaultMinStableRetain</code> guarantees a floor of non-prerelease versions so a burst of betas can't crowd stable releases out entirely.</span>
+            <span data-i18n="zh-TW"><code>defaultRetain</code> 保留最新的 N 個版本；<code>defaultMinStableRetain</code> 則保證一個非預發布版本的底線數量，讓一波測試版不會把正式版全部擠出保留範圍。</span>
+          </p>
         </div>
         <div class="card">
           <div class="card-icon">🩹</div>
-          <h4>Self-healing version tracking</h4>
-          <p>The installer re-reads the real on-disk <code>manifest.json</code> as ground truth on every check, so drift from Obsidian's own updater or a manual copy never causes a stale update prompt.</p>
+          <h4><span data-i18n="en">Self-healing version tracking</span><span data-i18n="zh-TW">自我修復的版本追蹤</span></h4>
+          <p>
+            <span data-i18n="en">The installer re-reads the real on-disk <code>manifest.json</code> as ground truth on every check, so drift from Obsidian's own updater or a manual copy never causes a stale update prompt.</span>
+            <span data-i18n="zh-TW">安裝器在每次檢查時都會重新讀取磁碟上真實的 <code>manifest.json</code> 作為依據，因此不論是 Obsidian 自己的更新機制還是手動複製造成的版本落差，都不會產生過期的更新提示。</span>
+          </p>
         </div>
         <div class="card">
           <div class="card-icon">🔍</div>
-          <h4>Adopts externally-installed plugins</h4>
-          <p>A plugin installed via Obsidian's built-in browser, BRAT, or a manual copy is detected and folded into update checks automatically — no separate "import" step.</p>
+          <h4><span data-i18n="en">Adopts externally-installed plugins</span><span data-i18n="zh-TW">自動採納外部安裝的外掛</span></h4>
+          <p>
+            <span data-i18n="en">A plugin installed via Obsidian's built-in browser, BRAT, or a manual copy is detected and folded into update checks automatically — no separate "import" step.</span>
+            <span data-i18n="zh-TW">透過 Obsidian 內建瀏覽器、BRAT 或手動複製安裝的外掛，會被自動偵測並納入更新檢查——不需要另外的「匯入」步驟。</span>
+          </p>
         </div>
         <div class="card">
           <div class="card-icon">🧪</div>
-          <h4>Per-plugin prerelease opt-in</h4>
-          <p>Each tracked plugin independently toggles whether prerelease versions count as an available update.</p>
+          <h4><span data-i18n="en">Per-plugin prerelease opt-in</span><span data-i18n="zh-TW">逐外掛設定是否允許預發布版本</span></h4>
+          <p>
+            <span data-i18n="en">Each tracked plugin independently toggles whether prerelease versions count as an available update.</span>
+            <span data-i18n="zh-TW">每個追蹤的外掛都能獨立切換是否將預發布版本視為可用更新。</span>
+          </p>
         </div>
         <div class="card">
           <div class="card-icon">📴</div>
-          <h4>Zero GitHub dependency inside the vault</h4>
-          <p>The installer plugin only ever calls the internal mirror's HTTP endpoints — <code>index.json</code> and <code>versions.json</code> — never <code>api.github.com</code>.</p>
+          <h4><span data-i18n="en">Zero GitHub dependency inside the vault</span><span data-i18n="zh-TW">保管庫內零 GitHub 依賴</span></h4>
+          <p>
+            <span data-i18n="en">The installer plugin only ever calls the internal mirror's HTTP endpoints — <code>index.json</code> and <code>versions.json</code> — never <code>api.github.com</code>.</span>
+            <span data-i18n="zh-TW">installer 外掛只會呼叫內部鏡像伺服器的 HTTP 端點——<code>index.json</code> 與 <code>versions.json</code>——絕不會呼叫 <code>api.github.com</code>。</span>
+          </p>
         </div>
         <div class="card">
           <div class="card-icon">♻️</div>
-          <h4>Incremental rebuilds</h4>
-          <p>Re-running mirror-builder only fetches what changed and prunes whatever fell out of retention — it never re-downloads everything from scratch.</p>
+          <h4><span data-i18n="en">Incremental rebuilds</span><span data-i18n="zh-TW">漸進式重建</span></h4>
+          <p>
+            <span data-i18n="en">Re-running mirror-builder only fetches what changed and prunes whatever fell out of retention — it never re-downloads everything from scratch.</span>
+            <span data-i18n="zh-TW">重新執行 mirror-builder 只會抓取有變動的部分，並清除超出保留範圍的版本——絕不會從頭重新下載所有內容。</span>
+          </p>
         </div>
       </div>
 
-      <h3>Non-goals</h3>
+      <h3><span data-i18n="en">Non-goals</span><span data-i18n="zh-TW">非目標</span></h3>
       <ul>
-        <li>File integrity checks (checksums/signatures) — noted in the format spec as a future addition, not yet implemented</li>
-        <li>Access control or TLS on the mirror itself — assumed to run on a trusted internal network; an nginx config concern, orthogonal to the file format</li>
-        <li>Submitting to Obsidian's official Community Plugins directory — this project exists specifically to work <em>without</em> GitHub access, which the official directory requires</li>
+        <li><span data-i18n="en">File integrity checks (checksums/signatures) — noted in the format spec as a future addition, not yet implemented</span><span data-i18n="zh-TW">檔案完整性檢查（校驗碼／簽章）——格式規格中已註明為未來增補項目，目前尚未實作</span></li>
+        <li><span data-i18n="en">Access control or TLS on the mirror itself — assumed to run on a trusted internal network; an nginx config concern, orthogonal to the file format</span><span data-i18n="zh-TW">鏡像伺服器本身的存取控制或 TLS——假設執行於受信任的內部網路；這屬於 nginx 設定範疇，與檔案格式無關</span></li>
+        <li><span data-i18n="en">Submitting to Obsidian's official Community Plugins directory — this project exists specifically to work <em>without</em> GitHub access, which the official directory requires</span><span data-i18n="zh-TW">提交到 Obsidian 官方社群外掛目錄——本專案的存在目的正是為了在<em>沒有</em> GitHub 存取權限的情況下運作，而官方目錄恰好需要它</span></li>
       </ul>
     </section>
 
@@ -616,56 +664,68 @@
          QUICK START
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-quickstart">
-      <h2>Quick Start</h2>
-      <p>Build the mirror outside the restricted network, then install the vault plugin inside it.</p>
+      <h2><span data-i18n="en">Quick Start</span><span data-i18n="zh-TW">快速開始</span></h2>
+      <p>
+        <span data-i18n="en">Build the mirror outside the restricted network, then install the vault plugin inside it.</span>
+        <span data-i18n="zh-TW">在受限網路之外建置鏡像伺服器，再到網路內部安裝保管庫外掛。</span>
+      </p>
 
-      <h3>Prerequisites</h3>
+      <h3><span data-i18n="en">Prerequisites</span><span data-i18n="zh-TW">先決條件</span></h3>
       <ul>
         <li>Node.js + npm</li>
-        <li>Docker, to bake the mirror into an nginx image</li>
-        <li>Optionally a <code>GITHUB_TOKEN</code> — raises the GitHub API rate limit from 60 to 5000 requests/hour</li>
+        <li><span data-i18n="en">Docker, to bake the mirror into an nginx image</span><span data-i18n="zh-TW">Docker，用來把鏡像伺服器打包成 nginx 映像檔</span></li>
+        <li><span data-i18n="en">Optionally a <code>GITHUB_TOKEN</code> — raises the GitHub API rate limit from 60 to 5000 requests/hour</span><span data-i18n="zh-TW">選用 <code>GITHUB_TOKEN</code>——可將 GitHub API 速率限制從每小時 60 次提高到 5000 次</span></li>
       </ul>
 
-      <h3>Installation</h3>
+      <h3><span data-i18n="en">Installation</span><span data-i18n="zh-TW">安裝步驟</span></h3>
       <ol class="steps">
         <li>
           <div>
-            <strong>Configure and build the mirror</strong>
+            <strong><span data-i18n="en">Configure and build the mirror</span><span data-i18n="zh-TW">設定並建置鏡像伺服器</span></strong>
             <pre><div class="lang-tag">mirror-builder/</div><code>npm install
-cp tracked-plugins.example.json tracked-plugins.json   <span class="cmt"># edit with real owner/repo entries</span>
-<span class="kw">export</span> GITHUB_TOKEN=ghp_xxx                             <span class="cmt"># optional, raises the rate limit</span>
-npm run build:image                                      <span class="cmt"># fetch releases, then docker build</span></code></pre>
+cp tracked-plugins.example.json tracked-plugins.json   <span class="cmt"><span data-i18n="en"># edit with real owner/repo entries</span><span data-i18n="zh-TW"># 編輯為實際的 owner/repo 項目</span></span>
+<span class="kw">export</span> GITHUB_TOKEN=ghp_xxx                             <span class="cmt"><span data-i18n="en"># optional, raises the rate limit</span><span data-i18n="zh-TW"># 選用，可提高速率限制</span></span>
+npm run build:image                                      <span class="cmt"><span data-i18n="en"># fetch releases, then docker build</span><span data-i18n="zh-TW"># 抓取發布版本，再執行 docker build</span></span></code></pre>
           </div>
         </li>
         <li>
           <div>
-            <strong>Run it on the internal network</strong>
+            <strong><span data-i18n="en">Run it on the internal network</span><span data-i18n="zh-TW">在內部網路上執行</span></strong>
             <pre><div class="lang-tag">shell</div><code>docker run -d --name plugin-mirror -p 8080:80 obsidian-plugin-mirror</code></pre>
           </div>
         </li>
         <li>
           <div>
-            <strong>Build the installer plugin</strong>
+            <strong><span data-i18n="en">Build the installer plugin</span><span data-i18n="zh-TW">建置 installer 外掛</span></strong>
             <pre><div class="lang-tag">obsidian-installer-plugin/</div><code>npm install
-npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main.js</span></code></pre>
+npm run build   <span class="cmt"><span data-i18n="en"># typechecks, then bundles src/main.ts -> main.js</span><span data-i18n="zh-TW"># 先型別檢查，再將 src/main.ts 打包成 main.js</span></span></code></pre>
           </div>
         </li>
         <li>
           <div>
-            <strong>Install the vault plugin</strong>
-            <p>Copy <code>manifest.json</code>, <code>main.js</code>, and <code>versions.json</code> into <code>&lt;vault&gt;/.obsidian/plugins/obsidian-mirror-installer/</code>, then enable it from Community Plugins.</p>
+            <strong><span data-i18n="en">Install the vault plugin</span><span data-i18n="zh-TW">安裝保管庫外掛</span></strong>
+            <p>
+              <span data-i18n="en">Copy <code>manifest.json</code>, <code>main.js</code>, and <code>versions.json</code> into <code>&lt;vault&gt;/.obsidian/plugins/obsidian-mirror-installer/</code>, then enable it from Community Plugins.</span>
+              <span data-i18n="zh-TW">將 <code>manifest.json</code>、<code>main.js</code> 與 <code>versions.json</code> 複製到 <code>&lt;vault&gt;/.obsidian/plugins/obsidian-mirror-installer/</code>，然後在社群外掛中啟用它。</span>
+            </p>
           </div>
         </li>
         <li>
           <div>
-            <strong>Point it at your mirror</strong>
-            <p>Open the plugin's settings tab and set <strong>Mirror base URL</strong> to your mirror's address, e.g. <code>http://plugin-mirror.internal:8080/</code>.</p>
+            <strong><span data-i18n="en">Point it at your mirror</span><span data-i18n="zh-TW">指向你的鏡像伺服器</span></strong>
+            <p>
+              <span data-i18n="en">Open the plugin's settings tab and set <strong>Mirror base URL</strong> to your mirror's address, e.g. <code>http://plugin-mirror.internal:8080/</code>.</span>
+              <span data-i18n="zh-TW">開啟外掛的設定頁籤，將<strong>鏡像伺服器網址</strong>設為你的鏡像伺服器位址，例如 <code>http://plugin-mirror.internal:8080/</code>。</span>
+            </p>
           </div>
         </li>
       </ol>
 
       <div class="callout callout-tip">
-        <p><strong>Tip:</strong> Opening the settings tab always runs a fresh update check first — including adopting any plugin already installed by other means — so what you see is current, not stale.</p>
+        <p>
+          <span data-i18n="en"><strong>Tip:</strong> Opening the settings tab always runs a fresh update check first — including adopting any plugin already installed by other means — so what you see is current, not stale.</span>
+          <span data-i18n="zh-TW"><strong>提示：</strong>開啟設定頁籤時一律會先執行一次全新的更新檢查——包括採納任何以其他方式已安裝的外掛——因此你看到的一定是最新狀態，而非過期資料。</span>
+        </p>
       </div>
     </section>
 
@@ -673,44 +733,44 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
          ARCHITECTURE
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-architecture">
-      <h2>Architecture</h2>
+      <h2><span data-i18n="en">Architecture</span><span data-i18n="zh-TW">架構</span></h2>
 
-      <h3>Directory structure</h3>
+      <h3><span data-i18n="en">Directory structure</span><span data-i18n="zh-TW">目錄結構</span></h3>
       <pre><div class="lang-tag">tree</div><code>obsidian-plugin-mirror/
-├── mirror-builder/              <span class="cmt"># CLI — fetches releases, writes the static tree</span>
+├── mirror-builder/              <span class="cmt"><span data-i18n="en"># CLI — fetches releases, writes the static tree</span><span data-i18n="zh-TW"># CLI ── 抓取發布版本，寫出靜態檔案樹</span></span>
 │   ├── src/
-│   │   ├── cli.ts                 <span class="cmt"># pipeline entrypoint</span>
-│   │   ├── config.ts              <span class="cmt"># tracked-plugins.json parsing/validation</span>
-│   │   ├── github.ts              <span class="cmt"># @octokit/rest release fetching</span>
-│   │   ├── versionSort.ts         <span class="cmt"># newest-first sort + retention (incl. minStableRetain floor)</span>
-│   │   ├── assets.ts              <span class="cmt"># download + prune stale version directories</span>
-│   │   ├── manifestReader.ts      <span class="cmt"># id/name/author/description extraction</span>
-│   │   └── writer.ts              <span class="cmt"># index.json / versions.json output</span>
-│   └── tracked-plugins.json     <span class="cmt"># the 113-plugin config this site's table reflects</span>
-└── obsidian-installer-plugin/   <span class="cmt"># the vault-side Obsidian plugin</span>
+│   │   ├── cli.ts                 <span class="cmt"><span data-i18n="en"># pipeline entrypoint</span><span data-i18n="zh-TW"># 流程進入點</span></span>
+│   │   ├── config.ts              <span class="cmt"><span data-i18n="en"># tracked-plugins.json parsing/validation</span><span data-i18n="zh-TW"># tracked-plugins.json 解析／驗證</span></span>
+│   │   ├── github.ts              <span class="cmt"><span data-i18n="en"># @octokit/rest release fetching</span><span data-i18n="zh-TW"># 以 @octokit/rest 抓取發布版本</span></span>
+│   │   ├── versionSort.ts         <span class="cmt"><span data-i18n="en"># newest-first sort + retention (incl. minStableRetain floor)</span><span data-i18n="zh-TW"># 由新到舊排序＋保留策略（含 minStableRetain 底線）</span></span>
+│   │   ├── assets.ts              <span class="cmt"><span data-i18n="en"># download + prune stale version directories</span><span data-i18n="zh-TW"># 下載並清除過期的版本目錄</span></span>
+│   │   ├── manifestReader.ts      <span class="cmt"><span data-i18n="en"># id/name/author/description extraction</span><span data-i18n="zh-TW"># 擷取 id/name/author/description</span></span>
+│   │   └── writer.ts              <span class="cmt"><span data-i18n="en"># index.json / versions.json output</span><span data-i18n="zh-TW"># 輸出 index.json／versions.json</span></span>
+│   └── tracked-plugins.json     <span class="cmt"><span data-i18n="en"># the 113-plugin config this site's table reflects</span><span data-i18n="zh-TW"># 本站表格所反映的外掛設定檔</span></span>
+└── obsidian-installer-plugin/   <span class="cmt"><span data-i18n="en"># the vault-side Obsidian plugin</span><span data-i18n="zh-TW"># 保管庫端的 Obsidian 外掛</span></span>
     └── src/
-        ├── main.ts                <span class="cmt"># plugin entrypoint, startup update check</span>
-        ├── registry.ts            <span class="cmt"># index.json / versions.json fetching</span>
-        ├── installer.ts           <span class="cmt"># install/remove + adoptUntrackedInstalledPlugins</span>
-        ├── updater.ts             <span class="cmt"># checkForUpdates</span>
-        ├── versionCompare.ts      <span class="cmt"># semver-with-fallback candidate selection</span>
-        └── settingsTab.ts         <span class="cmt"># Installed / Available UI</span></code></pre>
+        ├── main.ts                <span class="cmt"><span data-i18n="en"># plugin entrypoint, startup update check</span><span data-i18n="zh-TW"># 外掛進入點，啟動時的更新檢查</span></span>
+        ├── registry.ts            <span class="cmt"><span data-i18n="en"># index.json / versions.json fetching</span><span data-i18n="zh-TW"># 抓取 index.json／versions.json</span></span>
+        ├── installer.ts           <span class="cmt"><span data-i18n="en"># install/remove + adoptUntrackedInstalledPlugins</span><span data-i18n="zh-TW"># 安裝／移除＋adoptUntrackedInstalledPlugins</span></span>
+        ├── updater.ts             <span class="cmt"><span data-i18n="en"># checkForUpdates</span><span data-i18n="zh-TW"># checkForUpdates</span></span>
+        ├── versionCompare.ts      <span class="cmt"><span data-i18n="en"># semver-with-fallback candidate selection</span><span data-i18n="zh-TW"># 具備 fallback 機制的 semver 候選版本選擇</span></span>
+        └── settingsTab.ts         <span class="cmt"><span data-i18n="en"># Installed / Available UI</span><span data-i18n="zh-TW"># 「已安裝／可用」介面</span></span></code></pre>
 
-      <h3>mirror-builder pipeline</h3>
+      <h3><span data-i18n="en">mirror-builder pipeline</span><span data-i18n="zh-TW">mirror-builder 流程</span></h3>
       <ol class="steps">
-        <li><div><strong>Load &amp; validate config</strong><p>A missing file, invalid JSON, or an empty <code>plugins</code> array is the only fatal error path — it exits non-zero and writes nothing.</p></div></li>
-        <li><div><strong>Fetch releases per repo</strong><p>Bounded concurrency via octokit. A failed fetch for one repo is logged as a warning and skipped — never fatal to the run.</p></div></li>
-        <li><div><strong>Per-repo processing</strong><p>Validate required assets, sort newest-first, apply <code>retain</code> and the <code>minStableRetain</code> floor, then download and prune version directories.</p></div></li>
-        <li><div><strong>Write output</strong><p><code>index.json</code> covering every plugin that produced at least one valid version, plus a <code>versions.json</code> per plugin.</p></div></li>
+        <li><div><strong><span data-i18n="en">Load &amp; validate config</span><span data-i18n="zh-TW">載入並驗證設定</span></strong><p><span data-i18n="en">A missing file, invalid JSON, or an empty <code>plugins</code> array is the only fatal error path — it exits non-zero and writes nothing.</span><span data-i18n="zh-TW">檔案不存在、JSON 格式錯誤，或 <code>plugins</code> 陣列為空，是唯一的致命錯誤路徑——會以非零狀態退出且不寫入任何內容。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Fetch releases per repo</span><span data-i18n="zh-TW">逐一抓取各 repo 的發布版本</span></strong><p><span data-i18n="en">Bounded concurrency via octokit. A failed fetch for one repo is logged as a warning and skipped — never fatal to the run.</span><span data-i18n="zh-TW">透過 octokit 限制並行數量。單一 repo 抓取失敗只會記錄警告並略過——絕不會讓整次執行失敗。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Per-repo processing</span><span data-i18n="zh-TW">逐一處理每個 repo</span></strong><p><span data-i18n="en">Validate required assets, sort newest-first, apply <code>retain</code> and the <code>minStableRetain</code> floor, then download and prune version directories.</span><span data-i18n="zh-TW">驗證必要的資產檔案、由新到舊排序、套用 <code>retain</code> 與 <code>minStableRetain</code> 底線，接著下載並清除版本目錄。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Write output</span><span data-i18n="zh-TW">寫出結果</span></strong><p><span data-i18n="en"><code>index.json</code> covering every plugin that produced at least one valid version, plus a <code>versions.json</code> per plugin.</span><span data-i18n="zh-TW">產出涵蓋每個至少有一個有效版本的外掛的 <code>index.json</code>，以及每個外掛各自的 <code>versions.json</code>。</span></p></div></li>
       </ol>
 
-      <h3>Installer update-check lifecycle</h3>
+      <h3><span data-i18n="en">Installer update-check lifecycle</span><span data-i18n="zh-TW">Installer 更新檢查生命週期</span></h3>
       <ol class="steps">
-        <li><div><strong>Fetch the registry index</strong><p>Runs on startup (if enabled), on the "Check for updates now" button, and whenever the settings tab opens.</p></div></li>
-        <li><div><strong>Adopt untracked installed plugins</strong><p>Any registry entry with a matching <code>.obsidian/plugins/&lt;id&gt;/manifest.json</code> on disk that isn't already tracked gets folded in, using the real on-disk version as ground truth.</p></div></li>
-        <li><div><strong>Per-plugin version check</strong><p>Compares the installed version against the newest eligible version (respecting each plugin's prerelease opt-in).</p></div></li>
-        <li><div><strong>Optionally auto-install</strong><p>If "Install updates automatically" is on, eligible updates are downloaded and applied immediately.</p></div></li>
-        <li><div><strong>Persist settings</strong><p>Saved unconditionally — this is also where a self-healed stale version or a newly-adopted plugin gets written to disk.</p></div></li>
+        <li><div><strong><span data-i18n="en">Fetch the registry index</span><span data-i18n="zh-TW">抓取登錄索引</span></strong><p><span data-i18n="en">Runs on startup (if enabled), on the "Check for updates now" button, and whenever the settings tab opens.</span><span data-i18n="zh-TW">在啟動時（若已啟用）、按下「立即檢查更新」按鈕時，以及每次開啟設定頁籤時執行。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Adopt untracked installed plugins</span><span data-i18n="zh-TW">採納尚未追蹤的已安裝外掛</span></strong><p><span data-i18n="en">Any registry entry with a matching <code>.obsidian/plugins/&lt;id&gt;/manifest.json</code> on disk that isn't already tracked gets folded in, using the real on-disk version as ground truth.</span><span data-i18n="zh-TW">任何在磁碟上有對應 <code>.obsidian/plugins/&lt;id&gt;/manifest.json</code>、但尚未被追蹤的登錄項目，都會被納入追蹤，並以磁碟上的實際版本作為依據。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Per-plugin version check</span><span data-i18n="zh-TW">逐外掛版本檢查</span></strong><p><span data-i18n="en">Compares the installed version against the newest eligible version (respecting each plugin's prerelease opt-in).</span><span data-i18n="zh-TW">將已安裝版本與最新的合格版本比較（會遵守每個外掛各自的預發布版本設定）。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Optionally auto-install</span><span data-i18n="zh-TW">視情況自動安裝</span></strong><p><span data-i18n="en">If "Install updates automatically" is on, eligible updates are downloaded and applied immediately.</span><span data-i18n="zh-TW">若開啟「自動安裝更新」，符合資格的更新會立即下載並套用。</span></p></div></li>
+        <li><div><strong><span data-i18n="en">Persist settings</span><span data-i18n="zh-TW">持久化設定</span></strong><p><span data-i18n="en">Saved unconditionally — this is also where a self-healed stale version or a newly-adopted plugin gets written to disk.</span><span data-i18n="zh-TW">無條件儲存——自我修復的過期版本或新採納的外掛，也是在這一步被寫入磁碟。</span></p></div></li>
       </ol>
     </section>
 
@@ -718,53 +778,68 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
          SHARED FORMAT
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-format">
-      <h2>Shared Format</h2>
-      <p>The only contract between mirror-builder and the installer plugin — two JSON files nginx serves as plain static content, no custom server logic involved.</p>
+      <h2><span data-i18n="en">Shared Format</span><span data-i18n="zh-TW">共用格式</span></h2>
+      <p>
+        <span data-i18n="en">The only contract between mirror-builder and the installer plugin — two JSON files nginx serves as plain static content, no custom server logic involved.</span>
+        <span data-i18n="zh-TW">mirror-builder 與 installer 外掛之間唯一的契約——兩個由 nginx 以純靜態內容提供的 JSON 檔案，不涉及任何自訂伺服器邏輯。</span>
+      </p>
 
       <h3>index.json</h3>
-      <p>One entry per plugin that has at least one valid mirrored version.</p>
+      <p>
+        <span data-i18n="en">One entry per plugin that has at least one valid mirrored version.</span>
+        <span data-i18n="zh-TW">每個至少有一個有效鏡像版本的外掛，都有一筆對應項目。</span>
+      </p>
       <div class="table-wrap">
         <table>
           <tbody>
-            <tr><td><code>id</code> / <code>name</code></td><td>From the plugin's own <code>manifest.json</code></td></tr>
-            <tr><td><code>author</code></td><td>From <code>manifest.json</code>; falls back to the GitHub repo owner if the manifest omits it</td></tr>
-            <tr><td><code>description</code></td><td>From <code>manifest.json</code></td></tr>
-            <tr><td><code>repo</code></td><td><code>owner/name</code> — the tracked GitHub repo</td></tr>
-            <tr><td><code>latestVersion</code></td><td>Newest retained non-prerelease version, or <code>null</code></td></tr>
-            <tr><td><code>latestPrerelease</code></td><td>Newest retained prerelease version, or <code>null</code></td></tr>
+            <tr><td><code>id</code> / <code>name</code></td><td><span data-i18n="en">From the plugin's own <code>manifest.json</code></span><span data-i18n="zh-TW">來自外掛自身的 <code>manifest.json</code></span></td></tr>
+            <tr><td><code>author</code></td><td><span data-i18n="en">From <code>manifest.json</code>; falls back to the GitHub repo owner if the manifest omits it</span><span data-i18n="zh-TW">來自 <code>manifest.json</code>；若 manifest 未提供，則回退為 GitHub repo 擁有者</span></td></tr>
+            <tr><td><code>description</code></td><td><span data-i18n="en">From <code>manifest.json</code></span><span data-i18n="zh-TW">來自 <code>manifest.json</code></span></td></tr>
+            <tr><td><code>repo</code></td><td><span data-i18n="en"><code>owner/name</code> — the tracked GitHub repo</span><span data-i18n="zh-TW"><code>owner/name</code> —— 被追蹤的 GitHub repo</span></td></tr>
+            <tr><td><code>latestVersion</code></td><td><span data-i18n="en">Newest retained non-prerelease version, or <code>null</code></span><span data-i18n="zh-TW">保留範圍內最新的正式版本，或 <code>null</code></span></td></tr>
+            <tr><td><code>latestPrerelease</code></td><td><span data-i18n="en">Newest retained prerelease version, or <code>null</code></span><span data-i18n="zh-TW">保留範圍內最新的預發布版本，或 <code>null</code></span></td></tr>
           </tbody>
         </table>
       </div>
 
       <h3>versions.json</h3>
-      <p>One per plugin, at <code>plugins/&lt;owner&gt;/&lt;repo&gt;/versions.json</code>.</p>
+      <p>
+        <span data-i18n="en">One per plugin, at <code>plugins/&lt;owner&gt;/&lt;repo&gt;/versions.json</code>.</span>
+        <span data-i18n="zh-TW">每個外掛一份，位於 <code>plugins/&lt;owner&gt;/&lt;repo&gt;/versions.json</code>。</span>
+      </p>
       <div class="table-wrap">
         <table>
           <tbody>
-            <tr><td><code>repo</code> / <code>latest</code></td><td>Repo string and the newest non-prerelease version</td></tr>
-            <tr><td><code>versions[]</code></td><td>Every retained version — <code>version</code>, <code>prerelease</code>, <code>publishedAt</code>, <code>files</code></td></tr>
+            <tr><td><code>repo</code> / <code>latest</code></td><td><span data-i18n="en">Repo string and the newest non-prerelease version</span><span data-i18n="zh-TW">Repo 字串與最新的正式版本</span></td></tr>
+            <tr><td><code>versions[]</code></td><td><span data-i18n="en">Every retained version — <code>version</code>, <code>prerelease</code>, <code>publishedAt</code>, <code>files</code></span><span data-i18n="zh-TW">每個保留的版本——<code>version</code>、<code>prerelease</code>、<code>publishedAt</code>、<code>files</code></span></td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="callout callout-info">
-        <p><strong>Note:</strong> Checksums/signatures aren't part of the format yet, but the <code>versions[]</code> entry shape has room for them without a breaking change — see the full spec for details.</p>
+        <p>
+          <span data-i18n="en"><strong>Note:</strong> Checksums/signatures aren't part of the format yet, but the <code>versions[]</code> entry shape has room for them without a breaking change — see the full spec for details.</span>
+          <span data-i18n="zh-TW"><strong>備註：</strong>校驗碼／簽章目前還不是格式的一部分，但 <code>versions[]</code> 項目的結構已預留空間，未來加入時不會造成破壞性變更——詳見完整規格。</span>
+        </p>
       </div>
 
-      <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md">→ Read the full format spec</a>
+      <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md"><span data-i18n="en">→ Read the full format spec</span><span data-i18n="zh-TW">→ 閱讀完整格式規格</span></a>
     </section>
 
     <!-- ══════════════════════════════════════════════════════════════════
          TRACKED PLUGINS
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-plugins">
-      <h2>Tracked Plugins</h2>
-      <p>Every repo in <code>mirror-builder/tracked-plugins.json</code> — the source of truth is that file; this table is a generated, human-readable view of it. <strong>208 plugins tracked.</strong></p>
+      <h2><span data-i18n="en">Tracked Plugins</span><span data-i18n="zh-TW">追蹤的外掛</span></h2>
+      <p>
+        <span data-i18n="en">Every repo in <code>mirror-builder/tracked-plugins.json</code> — the source of truth is that file; this table is a generated, human-readable view of it. <strong>208 plugins tracked.</strong></span>
+        <span data-i18n="zh-TW">列出 <code>mirror-builder/tracked-plugins.json</code> 中的每個 repo——該檔案才是真正的資料來源；這張表是由它產生的易讀檢視畫面。<strong>目前追蹤 208 個外掛。</strong></span>
+      </p>
 
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Plugin</th><th>Author</th><th>Repo</th></tr>
+            <tr><th><span data-i18n="en">Plugin</span><span data-i18n="zh-TW">外掛</span></th><th><span data-i18n="en">Author</span><span data-i18n="zh-TW">作者</span></th><th>Repo</th></tr>
           </thead>
           <tbody>
               <tr><td>Actions URI</td><td>Carlo Zottmann</td><td><code><a href="https://github.com/czottmann/obsidian-actions-uri" target="_blank">czottmann/obsidian-actions-uri</a></code></td></tr>
@@ -984,25 +1059,37 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
          KNOWN LIMITATIONS
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-limitations">
-      <h2>Known Limitations</h2>
-      <p>What's deliberately out of scope for v1.</p>
+      <h2><span data-i18n="en">Known Limitations</span><span data-i18n="zh-TW">已知限制</span></h2>
+      <p>
+        <span data-i18n="en">What's deliberately out of scope for v1.</span>
+        <span data-i18n="zh-TW">v1 刻意不涵蓋的範圍。</span>
+      </p>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Limitation</th><th>Why it's fine for now</th></tr>
+            <tr><th><span data-i18n="en">Limitation</span><span data-i18n="zh-TW">限制</span></th><th><span data-i18n="en">Why it's fine for now</span><span data-i18n="zh-TW">目前為何無妨</span></th></tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>No file integrity checks</strong></td>
-              <td>Checksums/signatures are noted in the format spec as a future addition — the version-entry format has room for it without a breaking change.</td>
+              <td><strong><span data-i18n="en">No file integrity checks</span><span data-i18n="zh-TW">沒有檔案完整性檢查</span></strong></td>
+              <td>
+                <span data-i18n="en">Checksums/signatures are noted in the format spec as a future addition — the version-entry format has room for it without a breaking change.</span>
+                <span data-i18n="zh-TW">校驗碼／簽章已在格式規格中註明為未來增補項目——版本項目的格式已預留空間，未來加入不會造成破壞性變更。</span>
+              </td>
             </tr>
             <tr>
-              <td><strong>No access control / TLS</strong></td>
-              <td>The mirror is assumed to run on a trusted internal network — an nginx config concern, orthogonal to the file format.</td>
+              <td><strong><span data-i18n="en">No access control / TLS</span><span data-i18n="zh-TW">沒有存取控制／TLS</span></strong></td>
+              <td>
+                <span data-i18n="en">The mirror is assumed to run on a trusted internal network — an nginx config concern, orthogonal to the file format.</span>
+                <span data-i18n="zh-TW">假設鏡像伺服器執行於受信任的內部網路——這屬於 nginx 設定範疇，與檔案格式無關。</span>
+              </td>
             </tr>
             <tr>
-              <td><strong>A pruned version can 404</strong></td>
-              <td>Only affects showing "what version am I on" — the install/update flow itself is unaffected.</td>
+              <td><strong><span data-i18n="en">A pruned version can 404</span><span data-i18n="zh-TW">已清除的版本可能回傳 404</span></strong></td>
+              <td>
+                <span data-i18n="en">Only affects showing "what version am I on" — the install/update flow itself is unaffected.</span>
+                <span data-i18n="zh-TW">只影響「目前是哪個版本」的顯示——安裝／更新流程本身不受影響。</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -1013,28 +1100,43 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
          DESIGN SPECS
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-specs">
-      <h2>Design Specs</h2>
-      <p>Full technical detail behind each subsystem.</p>
+      <h2><span data-i18n="en">Design Specs</span><span data-i18n="zh-TW">設計規格</span></h2>
+      <p>
+        <span data-i18n="en">Full technical detail behind each subsystem.</span>
+        <span data-i18n="zh-TW">每個子系統背後的完整技術細節。</span>
+      </p>
       <div class="card-grid">
         <div class="card">
-          <h4>Shared format</h4>
-          <p>Directory layout and JSON schemas — the only contract between the two subsystems.</p>
-          <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md">→ Read the spec</a>
+          <h4><span data-i18n="en">Shared format</span><span data-i18n="zh-TW">共用格式</span></h4>
+          <p>
+            <span data-i18n="en">Directory layout and JSON schemas — the only contract between the two subsystems.</span>
+            <span data-i18n="zh-TW">目錄結構與 JSON 綱要——兩個子系統之間唯一的契約。</span>
+          </p>
+          <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md"><span data-i18n="en">→ Read the spec</span><span data-i18n="zh-TW">→ 閱讀規格</span></a>
         </div>
         <div class="card">
-          <h4>mirror-builder design</h4>
-          <p>Pipeline, config schema, incremental-run behavior, error handling.</p>
-          <a class="go" href="superpowers/specs/2026-07-23-mirror-builder-design.md">→ Read the spec</a>
+          <h4><span data-i18n="en">mirror-builder design</span><span data-i18n="zh-TW">mirror-builder 設計</span></h4>
+          <p>
+            <span data-i18n="en">Pipeline, config schema, incremental-run behavior, error handling.</span>
+            <span data-i18n="zh-TW">流程、設定綱要、增量執行行為、錯誤處理。</span>
+          </p>
+          <a class="go" href="superpowers/specs/2026-07-23-mirror-builder-design.md"><span data-i18n="en">→ Read the spec</span><span data-i18n="zh-TW">→ 閱讀規格</span></a>
         </div>
         <div class="card">
-          <h4>Installer plugin design</h4>
-          <p>Module breakdown, data model, browse/install/update/remove flows.</p>
-          <a class="go" href="superpowers/specs/2026-07-23-obsidian-installer-plugin-design.md">→ Read the spec</a>
+          <h4><span data-i18n="en">Installer plugin design</span><span data-i18n="zh-TW">Installer 外掛設計</span></h4>
+          <p>
+            <span data-i18n="en">Module breakdown, data model, browse/install/update/remove flows.</span>
+            <span data-i18n="zh-TW">模組拆解、資料模型、瀏覽／安裝／更新／移除流程。</span>
+          </p>
+          <a class="go" href="superpowers/specs/2026-07-23-obsidian-installer-plugin-design.md"><span data-i18n="en">→ Read the spec</span><span data-i18n="zh-TW">→ 閱讀規格</span></a>
         </div>
         <div class="card">
-          <h4>Minimum stable retention</h4>
-          <p>Why a burst of prereleases could crowd out every stable version, and the <code>minStableRetain</code> floor that fixes it.</p>
-          <a class="go" href="superpowers/specs/2026-07-23-min-stable-retain-design.md">→ Read the spec</a>
+          <h4><span data-i18n="en">Minimum stable retention</span><span data-i18n="zh-TW">最低正式版保留數量</span></h4>
+          <p>
+            <span data-i18n="en">Why a burst of prereleases could crowd out every stable version, and the <code>minStableRetain</code> floor that fixes it.</span>
+            <span data-i18n="zh-TW">為什麼一波預發布版本可能把所有正式版本都擠出保留範圍，以及用來修正這個問題的 <code>minStableRetain</code> 底線。</span>
+          </p>
+          <a class="go" href="superpowers/specs/2026-07-23-min-stable-retain-design.md"><span data-i18n="en">→ Read the spec</span><span data-i18n="zh-TW">→ 閱讀規格</span></a>
         </div>
       </div>
     </section>
@@ -1043,83 +1145,102 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
          CHANGELOG
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-changelog">
-      <h2>Changelog</h2>
+      <h2><span data-i18n="en">Changelog</span><span data-i18n="zh-TW">更新日誌</span></h2>
+
+      <div class="cl-entry">
+        <div class="cl-date">docs site</div>
+        <h3><span data-i18n="en">Bilingual documentation site</span><span data-i18n="zh-TW">雙語文件網站</span></h3>
+        <ul>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">This site now supports English and Traditional Chinese, auto-detected from the browser's language with a manual toggle in the topbar. Prose content is duplicated inline as English/Chinese span pairs toggled via CSS, rather than a JS string dictionary, so rich inline markup (links, code, bold text) stays inline instead of being escaped into JS strings. The 208-row tracked-plugins table is left untranslated — plugin names, authors, and repo paths are proper nouns, identical in either language.</span><span data-i18n="zh-TW">本站現已支援英文與繁體中文，會依瀏覽器語言自動偵測，並可透過頂端列的按鈕手動切換。內文採用行內的中英文 span 配對、以 CSS 切換顯示，而非 JS 字典，這樣像連結、程式碼、粗體字這類行內標記才能維持在原本的位置，不需要跳脫成 JS 字串。208 列的追蹤外掛表格則維持原樣未翻譯——外掛名稱、作者與 repo 路徑都是專有名詞，中英文皆相同。</span></li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.7</div>
+        <h3><span data-i18n="en">Bilingual UI: English / Traditional Chinese</span><span data-i18n="zh-TW">雙語介面：英文／繁體中文</span></h3>
+        <ul>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">The entire settings UI — labels, buttons, placeholders, tooltips, and notices — is now localized via a new <code>src/i18n</code> module, auto-detected once at startup from Obsidian's own configured language (<code>zh</code>/<code>zh-TW</code>/<code>zh-CN</code>/<code>zh-HK</code> → Traditional Chinese, otherwise English). No new setting was added for it — matching Obsidian's own behavior, which also needs a reload to fully apply a language change.</span><span data-i18n="zh-TW">整個設定介面──標籤、按鈕、輸入框提示文字、工具提示與通知──現在都透過新的 <code>src/i18n</code> 模組進行在地化，並在啟動時依 Obsidian 本身設定的語言自動偵測一次（<code>zh</code>／<code>zh-TW</code>／<code>zh-CN</code>／<code>zh-HK</code> → 繁體中文，其餘皆為英文）。並未為此新增任何設定選項──與 Obsidian 本身的行為一致，切換語言同樣需要重新載入才能完全套用。</span></li>
+        </ul>
+      </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.6</div>
-        <h3>Self-update, and a clearer global settings layout</h3>
+        <h3><span data-i18n="en">Self-update, and a clearer global settings layout</span><span data-i18n="zh-TW">自我更新，以及更清楚的全域設定版面</span></h3>
         <ul>
-          <li><span class="cl-tag cl-feat">Feature</span> A "Mirror Installer version" row in the global settings shows the installed version, and an inline <strong>Update</strong> button when a newer one is on the mirror — this plugin never appears in "Installed mirrored plugins" or "Available in mirror" like a regular tracked plugin, since that flow's "Remove" button would delete its own running folder. Update downloads the new files only; applying them still requires reloading Obsidian, since hot-swapping a plugin's own running code isn't safe to do in place.</li>
-          <li><span class="cl-tag cl-fix">Fix</span> "Install updates automatically" was ambiguous about whether it covered this plugin's own updates. Renamed to "Automatically install updates for mirrored plugins" with a description clarifying it only applies to other plugins.</li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">A "Mirror Installer version" row in the global settings shows the installed version, and an inline <strong>Update</strong> button when a newer one is on the mirror — this plugin never appears in "Installed mirrored plugins" or "Available in mirror" like a regular tracked plugin, since that flow's "Remove" button would delete its own running folder. Update downloads the new files only; applying them still requires reloading Obsidian, since hot-swapping a plugin's own running code isn't safe to do in place.</span><span data-i18n="zh-TW">全域設定中的「Mirror Installer version」列會顯示已安裝的版本，並在鏡像伺服器上有較新版本時顯示內嵌的<strong>更新</strong>按鈕——本外掛絕不會像一般追蹤的外掛那樣出現在「已安裝的鏡像外掛」或「鏡像上可用的外掛」中，因為那個流程的「移除」按鈕會刪掉自己正在執行的資料夾。更新只會下載新檔案；套用仍需要重新載入 Obsidian，因為原地熱替換外掛自身正在執行的程式碼並不安全。</span></li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">"Install updates automatically" was ambiguous about whether it covered this plugin's own updates. Renamed to "Automatically install updates for mirrored plugins" with a description clarifying it only applies to other plugins.</span><span data-i18n="zh-TW">「自動安裝更新」原本無法明確表達是否也涵蓋本外掛自身的更新。已更名為「自動安裝鏡像外掛的更新」，並在說明中澄清僅適用於其他外掛。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.5</div>
-        <h3>Registry list not showing the full mirror, and slow to load</h3>
+        <h3><span data-i18n="en">Registry list not showing the full mirror, and slow to load</span><span data-i18n="zh-TW">登錄清單未顯示完整鏡像內容，且載入緩慢</span></h3>
         <ul>
-          <li><span class="cl-tag cl-fix">Fix</span> Obsidian's <code>requestUrl</code> (Electron's Chromium network stack) was silently serving a stale cached response for <code>index.json</code>/<code>versions.json</code> instead of hitting the network — confirmed by stopping the mirror server entirely and seeing the plugin still return old, non-deterministic counts instead of erroring. Every request now carries a unique cache-busting query param plus explicit <code>Cache-Control</code>/<code>Pragma: no-cache</code> headers.</li>
-          <li><span class="cl-tag cl-fix">Fix</span> Adoption (disk reads) and the per-plugin update check (network fetches) both ran fully sequentially, one entry at a time — with the registry now at 200+ plugins, that was hundreds of chained <code>await</code>s before the rest of settings could render. Both now run concurrently via <code>Promise.all</code>.</li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">Obsidian's <code>requestUrl</code> (Electron's Chromium network stack) was silently serving a stale cached response for <code>index.json</code>/<code>versions.json</code> instead of hitting the network — confirmed by stopping the mirror server entirely and seeing the plugin still return old, non-deterministic counts instead of erroring. Every request now carries a unique cache-busting query param plus explicit <code>Cache-Control</code>/<code>Pragma: no-cache</code> headers.</span><span data-i18n="zh-TW">Obsidian 的 <code>requestUrl</code>（Electron 的 Chromium 網路堆疊）會默默回傳 <code>index.json</code>／<code>versions.json</code> 的過期快取回應，而不是真的發出網路請求——透過完全關閉鏡像伺服器後，外掛仍回傳舊的、不確定的數量而非報錯，確認了這個問題。現在每個請求都會帶上唯一的快取破壞查詢參數，並附上明確的 <code>Cache-Control</code>／<code>Pragma: no-cache</code> 標頭。</span></li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">Adoption (disk reads) and the per-plugin update check (network fetches) both ran fully sequentially, one entry at a time — with the registry now at 200+ plugins, that was hundreds of chained <code>await</code>s before the rest of settings could render. Both now run concurrently via <code>Promise.all</code>.</span><span data-i18n="zh-TW">採納（磁碟讀取）與逐外掛的更新檢查（網路請求）先前都是完全循序執行，一筆接一筆——在登錄現已超過 200 個外掛的情況下，這代表在其餘設定能夠渲染之前，要串接數百個 <code>await</code>。現在兩者都透過 <code>Promise.all</code> 並行執行。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.4</div>
-        <h3>Installed/available name consistency</h3>
+        <h3><span data-i18n="en">Installed/available name consistency</span><span data-i18n="zh-TW">「已安裝／可用」名稱一致性</span></h3>
         <ul>
-          <li><span class="cl-tag cl-fix">Fix</span> The "Installed" list showed the raw plugin id while "Available" showed the registry's human-readable name for the same plugin. <code>TrackedPlugin</code> now stores and self-heals a <code>name</code> field, backfilled for plugins tracked before this fix.</li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">The "Installed" list showed the raw plugin id while "Available" showed the registry's human-readable name for the same plugin. <code>TrackedPlugin</code> now stores and self-heals a <code>name</code> field, backfilled for plugins tracked before this fix.</span><span data-i18n="zh-TW">「已安裝」清單顯示的是原始外掛 id，而「可用」清單顯示的卻是登錄中該外掛的易讀名稱。<code>TrackedPlugin</code> 現在會儲存並自我修復 <code>name</code> 欄位，並為此修正前就已追蹤的外掛回填該欄位。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.3</div>
-        <h3>Settings tab render ordering</h3>
+        <h3><span data-i18n="en">Settings tab render ordering</span><span data-i18n="zh-TW">設定頁籤渲染順序</span></h3>
         <ul>
-          <li><span class="cl-tag cl-fix">Fix</span> On a fresh launch, the settings tab could render the installed list before the update check finished, so the "Install update" button just wasn't there yet on first paint. It now awaits the check before rendering, with a loading placeholder shown meanwhile.</li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">On a fresh launch, the settings tab could render the installed list before the update check finished, so the "Install update" button just wasn't there yet on first paint. It now awaits the check before rendering, with a loading placeholder shown meanwhile.</span><span data-i18n="zh-TW">在剛啟動時，設定頁籤可能會在更新檢查完成前就渲染已安裝清單，導致「安裝更新」按鈕在第一次繪製時根本還沒出現。現在會先等待檢查完成才渲染，期間顯示載入中的佔位文字。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.2</div>
-        <h3>Startup adoption + update check</h3>
+        <h3><span data-i18n="en">Startup adoption + update check</span><span data-i18n="zh-TW">啟動時的採納＋更新檢查</span></h3>
         <ul>
-          <li><span class="cl-tag cl-fix">Fix</span> Adoption of externally-installed plugins previously only ran when the settings tab was opened. <code>checkForUpdates</code> now adopts on every trigger path — startup, the manual button, and the command palette entry.</li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">Adoption of externally-installed plugins previously only ran when the settings tab was opened. <code>checkForUpdates</code> now adopts on every trigger path — startup, the manual button, and the command palette entry.</span><span data-i18n="zh-TW">先前只有在開啟設定頁籤時才會採納外部安裝的外掛。現在 <code>checkForUpdates</code> 會在每個觸發路徑上都執行採納——啟動時、手動按鈕，以及命令面板項目。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.1</div>
-        <h3>Manifest author fallback</h3>
+        <h3><span data-i18n="en">Manifest author fallback</span><span data-i18n="zh-TW">Manifest 作者欄位回退</span></h3>
         <ul>
-          <li><span class="cl-tag cl-fix">Fix</span> A <code>manifest.json</code> missing the optional <code>author</code> field (not required by Obsidian to load a plugin) no longer excludes that plugin from <code>index.json</code> entirely — falls back to the GitHub repo owner.</li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">A <code>manifest.json</code> missing the optional <code>author</code> field (not required by Obsidian to load a plugin) no longer excludes that plugin from <code>index.json</code> entirely — falls back to the GitHub repo owner.</span><span data-i18n="zh-TW"><code>manifest.json</code> 缺少選填的 <code>author</code> 欄位（Obsidian 載入外掛並不需要它）時，不會再讓該外掛完全被排除在 <code>index.json</code> 之外——會回退使用 GitHub repo 擁有者。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.0</div>
-        <h3>Initial release</h3>
+        <h3><span data-i18n="en">Initial release</span><span data-i18n="zh-TW">初始版本</span></h3>
         <ul>
-          <li><span class="cl-tag cl-feat">Feature</span> Browse, install, update, and remove plugins from the mirror's registry — including a per-plugin prerelease opt-in and independently toggleable auto-check / auto-install settings.</li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">Browse, install, update, and remove plugins from the mirror's registry — including a per-plugin prerelease opt-in and independently toggleable auto-check / auto-install settings.</span><span data-i18n="zh-TW">從鏡像伺服器的登錄中瀏覽、安裝、更新與移除外掛——包含逐外掛的預發布版本選項，以及可獨立切換的自動檢查／自動安裝設定。</span></li>
         </ul>
       </div>
 
       <div class="cl-entry">
         <div class="cl-date">mirror-builder</div>
-        <h3>Ongoing fixes and tooling</h3>
+        <h3><span data-i18n="en">Ongoing fixes and tooling</span><span data-i18n="zh-TW">持續進行的修正與工具</span></h3>
         <ul>
-          <li><span class="cl-tag cl-feat">Feature</span> <code>update-one</code> script (<code>npm run update-one -- --repo &lt;owner/repo&gt;</code>) — fetches releases for exactly one repo and merges its entry into an existing <code>dist/index.json</code> in place, leaving every other plugin's files and index entry untouched. Exists so releasing obsidian-installer-plugin (deliberately not listed in <code>tracked-plugins.json</code>) never requires re-fetching the other ~200 tracked plugins.</li>
-          <li><span class="cl-tag cl-feat">Feature</span> <code>sync-top-plugins</code> script (<code>npm run sync-top-plugins -- --top 200</code>) — ranks Obsidian's community plugins by download count and appends any not already tracked. Additive only by default; a repo that appears to have moved to a new owner is reported, not double-tracked, unless <code>--replace-moved</code> is passed.</li>
-          <li><span class="cl-tag cl-feat">Feature</span> <code>tracked-plugins.json</code> expanded from 45 to 208 plugins — every plugin in the top 200 by download count.</li>
-          <li><span class="cl-tag cl-feat">Feature</span> <code>defaultMinStableRetain</code> — a floor that guarantees N non-prerelease versions are always retained, even if a burst of prereleases would otherwise crowd them out of the plain <code>retain</code> window.</li>
-          <li><span class="cl-tag cl-fix">Fix</span> A malformed <code>manifest.json</code> on one plugin no longer crashes the whole run — that plugin is skipped with a warning instead.</li>
-          <li><span class="cl-tag cl-fix">Fix</span> Stale entries are removed from <code>tracked-plugins.json</code> automatically instead of accumulating.</li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en"><code>update-one</code> script (<code>npm run update-one -- --repo &lt;owner/repo&gt;</code>) — fetches releases for exactly one repo and merges its entry into an existing <code>dist/index.json</code> in place, leaving every other plugin's files and index entry untouched. Exists so releasing obsidian-installer-plugin (deliberately not listed in <code>tracked-plugins.json</code>) never requires re-fetching the other ~200 tracked plugins.</span><span data-i18n="zh-TW"><code>update-one</code> 腳本（<code>npm run update-one -- --repo &lt;owner/repo&gt;</code>）——只抓取單一 repo 的發布版本，並將其項目就地合併進現有的 <code>dist/index.json</code>，不動到其他任何外掛的檔案與索引項目。存在的目的是讓發布 obsidian-installer-plugin（刻意不列在 <code>tracked-plugins.json</code> 中）時，永遠不需要重新抓取其餘約 200 個追蹤的外掛。</span></li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en"><code>sync-top-plugins</code> script (<code>npm run sync-top-plugins -- --top 200</code>) — ranks Obsidian's community plugins by download count and appends any not already tracked. Additive only by default; a repo that appears to have moved to a new owner is reported, not double-tracked, unless <code>--replace-moved</code> is passed.</span><span data-i18n="zh-TW"><code>sync-top-plugins</code> 腳本（<code>npm run sync-top-plugins -- --top 200</code>）——依下載數為 Obsidian 社群外掛排名，並附加任何尚未被追蹤的外掛。預設僅新增；若某個 repo 看起來已搬遷到新的擁有者，只會回報，不會重複追蹤，除非傳入 <code>--replace-moved</code>。</span></li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en"><code>tracked-plugins.json</code> expanded from 45 to 208 plugins — every plugin in the top 200 by download count.</span><span data-i18n="zh-TW"><code>tracked-plugins.json</code> 從 45 個外掛擴充到 208 個——涵蓋下載數前 200 名的每個外掛。</span></li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en"><code>defaultMinStableRetain</code> — a floor that guarantees N non-prerelease versions are always retained, even if a burst of prereleases would otherwise crowd them out of the plain <code>retain</code> window.</span><span data-i18n="zh-TW"><code>defaultMinStableRetain</code> ── 一個保證永遠保留 N 個正式版本的底線，即使一波預發布版本原本會把它們擠出單純的 <code>retain</code> 範圍。</span></li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">A malformed <code>manifest.json</code> on one plugin no longer crashes the whole run — that plugin is skipped with a warning instead.</span><span data-i18n="zh-TW">單一外掛的 <code>manifest.json</code> 格式錯誤，不會再讓整次執行崩潰——該外掛會被略過並顯示警告。</span></li>
+          <li><span class="cl-tag cl-fix"><span data-i18n="en">Fix</span><span data-i18n="zh-TW">修正</span></span> <span data-i18n="en">Stale entries are removed from <code>tracked-plugins.json</code> automatically instead of accumulating.</span><span data-i18n="zh-TW">過期的項目會自動從 <code>tracked-plugins.json</code> 中移除，不再持續累積。</span></li>
         </ul>
       </div>
     </section>
 
     <footer class="page-footer">
       <span>khchiang1121/obsidian-plugin-mirror</span>
-      <span>View source on <a href="https://github.com/khchiang1121/obsidian-plugin-mirror" target="_blank">GitHub</a></span>
+      <span>
+        <span data-i18n="en">View source on <a href="https://github.com/khchiang1121/obsidian-plugin-mirror" target="_blank">GitHub</a></span>
+        <span data-i18n="zh-TW">在 <a href="https://github.com/khchiang1121/obsidian-plugin-mirror" target="_blank">GitHub</a> 上查看原始碼</span>
+      </span>
     </footer>
 
   </div><!-- .content -->
@@ -1147,17 +1268,56 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
     applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
 
+  // ── Language toggle ──────────────────────────────────────────────────
+  function detectLocale(raw) {
+    if (raw && raw.toLowerCase().startsWith('zh')) return 'zh-TW';
+    return 'en';
+  }
+
+  function applyLang(lang) {
+    if (lang === 'zh-TW') {
+      html.setAttribute('data-lang', 'zh-TW');
+      html.setAttribute('lang', 'zh-TW');
+    } else {
+      html.removeAttribute('data-lang');
+      html.setAttribute('lang', 'en');
+    }
+    localStorage.setItem('lang', lang);
+    renderBreadcrumb();
+  }
+
+  document.getElementById('langToggle').addEventListener('click', () => {
+    applyLang(html.getAttribute('data-lang') === 'zh-TW' ? 'en' : 'zh-TW');
+  });
+
   // ── Navigation ────────────────────────────────────────────────────────
   const navLinks = document.querySelectorAll('.nav-link[data-section]');
   const sections = document.querySelectorAll('.section');
   const crumb = document.getElementById('breadcrumb');
 
   const TITLES = {
-    overview: 'Overview', quickstart: 'Quick Start',
-    architecture: 'Architecture', format: 'Shared Format',
-    plugins: 'Tracked Plugins', limitations: 'Known Limitations',
-    specs: 'Design Specs', changelog: 'Changelog',
+    en: {
+      overview: 'Overview', quickstart: 'Quick Start',
+      architecture: 'Architecture', format: 'Shared Format',
+      plugins: 'Tracked Plugins', limitations: 'Known Limitations',
+      specs: 'Design Specs', changelog: 'Changelog',
+    },
+    'zh-TW': {
+      overview: '概覽', quickstart: '快速開始',
+      architecture: '架構', format: '共用格式',
+      plugins: '追蹤的外掛', limitations: '已知限制',
+      specs: '設計規格', changelog: '更新日誌',
+    },
   };
+  const DOCS_LABEL = { en: 'Docs', 'zh-TW': '文件' };
+
+  let currentSection = 'overview';
+
+  function renderBreadcrumb() {
+    const lang = html.getAttribute('data-lang') === 'zh-TW' ? 'zh-TW' : 'en';
+    const title = TITLES[lang][currentSection] || currentSection;
+    crumb.innerHTML = `${DOCS_LABEL[lang]} / <strong>${title}</strong>`;
+  }
 
   function navigate(id) {
     sections.forEach(s => s.classList.remove('active'));
@@ -1169,7 +1329,8 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
     const lnk = document.querySelector(`.nav-link[data-section="${id}"]`);
     if (lnk) lnk.classList.add('active');
 
-    crumb.innerHTML = `Docs / <strong>${TITLES[id] || id}</strong>`;
+    currentSection = id;
+    renderBreadcrumb();
     history.pushState(null, '', '#' + id);
   }
 
@@ -1185,7 +1346,13 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
   });
 
   const hash = location.hash.slice(1);
-  if (hash && TITLES[hash]) navigate(hash);
+  if (hash && TITLES.en[hash]) navigate(hash);
+  else renderBreadcrumb();
+
+  (function () {
+    const saved = localStorage.getItem('lang');
+    applyLang(saved === 'en' || saved === 'zh-TW' ? saved : detectLocale(navigator.language));
+  })();
 </script>
 
 </body>

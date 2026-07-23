@@ -10,6 +10,7 @@ import {
   type PluginManagerLike,
 } from './installer';
 import { checkSelfUpdate } from './selfUpdate';
+import { t } from './i18n';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
   plugin: MirrorInstallerPlugin;
@@ -34,8 +35,8 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
-      .setName('Mirror base URL')
-      .setDesc('Internal nginx server hosting the plugin mirror.')
+      .setName(t('settings.mirrorBaseUrl.name'))
+      .setDesc(t('settings.mirrorBaseUrl.desc'))
       .addText((text) =>
         text.setValue(this.plugin.settings.mirrorBaseUrl).onChange(async (value) => {
           this.plugin.settings.mirrorBaseUrl = value;
@@ -49,11 +50,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     // excludeIds in main.ts). Filled in once loadPluginLists has the
     // registry — see renderSelfVersionRow.
     const selfVersionSetting = new Setting(containerEl)
-      .setName('Mirror Installer version')
-      .setDesc(`Installed v${this.plugin.manifest.version} — checking for updates…`);
+      .setName(t('self.name'))
+      .setDesc(t('self.status.checking', { version: this.plugin.manifest.version }));
 
     new Setting(containerEl)
-      .setName('Check for updates on startup')
+      .setName(t('settings.autoCheckOnStartup.name'))
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.autoCheckOnStartup).onChange(async (value) => {
           this.plugin.settings.autoCheckOnStartup = value;
@@ -62,10 +63,8 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Automatically install updates for mirrored plugins')
-      .setDesc(
-        "Applies to other plugins installed through this tool. Mirror Installer's own updates always require a manual click above, since applying one needs an Obsidian reload."
-      )
+      .setName(t('settings.autoInstallUpdates.name'))
+      .setDesc(t('settings.autoInstallUpdates.desc'))
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.autoInstallUpdates).onChange(async (value) => {
           this.plugin.settings.autoInstallUpdates = value;
@@ -74,9 +73,9 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Check for updates now')
+      .setName(t('settings.checkNow.name'))
       .addButton((button) =>
-        button.setButtonText('Check now').onClick(() => {
+        button.setButtonText(t('settings.checkNow.button')).onClick(() => {
           this.display();
         })
       );
@@ -90,12 +89,12 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     // wrapper div in between (as an earlier version of this had) was enough
     // to break the alignment between the heading and the rows.
     const installedGroup = containerEl.createDiv({ cls: 'setting-group' });
-    const installedHeading = new Setting(installedGroup).setName('Installed mirrored plugins').setHeading();
-    installedGroup.createEl('p', { text: 'Checking installed mirrored plugins for updates…' });
+    const installedHeading = new Setting(installedGroup).setName(t('installed.heading')).setHeading();
+    installedGroup.createEl('p', { text: t('installed.checking') });
 
     const registryGroup = containerEl.createDiv({ cls: 'setting-group' });
-    const registryHeading = new Setting(registryGroup).setName('Available in mirror').setHeading();
-    registryGroup.createEl('p', { text: 'Loading…' });
+    const registryHeading = new Setting(registryGroup).setName(t('registry.heading')).setHeading();
+    registryGroup.createEl('p', { text: t('registry.loading') });
 
     void this.loadPluginLists(
       selfVersionSetting,
@@ -160,10 +159,10 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       entries = index.plugins;
     } catch (error) {
       selfVersionSetting.setDesc(
-        `Installed v${this.plugin.manifest.version} — failed to check for updates: ${(error as Error).message}`
+        t('self.status.error', { version: this.plugin.manifest.version, message: (error as Error).message })
       );
       this.clearGroupBody(registryGroup, registryHeadingEl);
-      registryGroup.createEl('p', { text: `Failed to load registry: ${(error as Error).message}` });
+      registryGroup.createEl('p', { text: t('registry.loadError', { message: (error as Error).message }) });
       this.renderInstalledPlugins(installedGroup, installedHeadingEl);
       return;
     }
@@ -192,24 +191,24 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     const result = await checkSelfUpdate(this.plugin.settings.mirrorBaseUrl, entries, selfId, currentVersion, this.plugin.fetchFn);
 
     if (result.status === 'not-in-registry') {
-      setting.setDesc(`Installed v${currentVersion} — not found in the mirror's registry.`);
+      setting.setDesc(t('self.status.notInRegistry', { version: currentVersion }));
       return;
     }
     if (result.status === 'error') {
-      setting.setDesc(`Installed v${currentVersion} — failed to check for updates: ${result.error}`);
+      setting.setDesc(t('self.status.error', { version: currentVersion, message: result.error ?? '' }));
       return;
     }
     if (result.status === 'up-to-date') {
-      setting.setDesc(`Installed v${currentVersion} — up to date.`);
+      setting.setDesc(t('self.status.upToDate', { version: currentVersion }));
       return;
     }
 
     const candidate = result.candidate!;
     const repo = result.repo!;
-    setting.setDesc(`Installed v${currentVersion} — update available: v${candidate.version}`);
+    setting.setDesc(t('self.status.updateAvailable', { version: currentVersion, newVersion: candidate.version }));
     setting.addButton((button) =>
       button
-        .setButtonText('Update')
+        .setButtonText(t('self.button.update'))
         .setCta()
         .onClick(async () => {
           try {
@@ -220,12 +219,9 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
               { repo, version: candidate.version, files: candidate.files },
               this.plugin.fetchFn
             );
-            new Notice(
-              `Updated to v${candidate.version}. Reload Obsidian (Ctrl/Cmd+R, or restart) to apply the update.`,
-              10000
-            );
+            new Notice(t('notice.selfUpdated', { version: candidate.version }), 10000);
           } catch (error) {
-            new Notice(`Failed to update: ${(error as Error).message}`);
+            new Notice(t('notice.selfUpdateFailed', { message: (error as Error).message }));
           }
         })
     );
@@ -235,7 +231,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     this.clearGroupBody(groupEl, headingEl);
     const tracked = this.plugin.settings.trackedPlugins;
     if (Object.keys(tracked).length === 0) {
-      groupEl.createEl('p', { text: 'No mirrored plugins installed yet.' });
+      groupEl.createEl('p', { text: t('installed.empty') });
       return;
     }
 
@@ -245,7 +241,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     // search box (rather than before) so the two end up in the right visual
     // order: search box above the items list, matching the native
     // heading → search → items structure.
-    this.createGroupSearch(groupEl, 'Filter by name or plugin id…', this.installedSearchQuery, (value) => {
+    this.createGroupSearch(groupEl, t('installed.searchPlaceholder'), this.installedSearchQuery, (value) => {
       this.installedSearchQuery = value;
       this.renderInstalledList(listEl);
     });
@@ -267,7 +263,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     });
 
     if (ids.length === 0) {
-      containerEl.createEl('p', { text: 'No installed plugins match your search.' });
+      containerEl.createEl('p', { text: t('installed.noMatch') });
       return;
     }
 
@@ -278,14 +274,17 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         .setName(entry.name ?? id)
         .setDesc(
           pending?.candidate
-            ? `Installed v${entry.installedVersion} — update available: v${pending.candidate.version}`
-            : `Installed v${entry.installedVersion}`
+            ? t('installed.status.updateAvailable', {
+                version: entry.installedVersion,
+                newVersion: pending.candidate.version,
+              })
+            : t('installed.status.upToDate', { version: entry.installedVersion })
         );
 
       if (pending?.candidate) {
         const candidate = pending.candidate;
         setting.addButton((button) =>
-          button.setButtonText('Install update').onClick(async () => {
+          button.setButtonText(t('installed.button.installUpdate')).onClick(async () => {
             try {
               await installPluginVersion(
                 this.getAdapter(),
@@ -298,10 +297,10 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
               entry.installedVersion = candidate.version;
               this.plugin.pendingUpdates.delete(id);
               await this.plugin.saveSettings();
-              new Notice(`Updated ${id} to v${entry.installedVersion}`);
+              new Notice(t('notice.updated', { id, version: entry.installedVersion }));
               this.display();
             } catch (error) {
-              new Notice(`Failed to update ${id}: ${(error as Error).message}`);
+              new Notice(t('notice.updateFailed', { id, message: (error as Error).message }));
             }
           })
         );
@@ -310,7 +309,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       setting.addToggle((toggle) =>
         toggle
           .setValue(entry.allowPrerelease)
-          .setTooltip('Allow prerelease versions')
+          .setTooltip(t('installed.toggle.allowPrerelease'))
           .onChange(async (value) => {
             entry.allowPrerelease = value;
             await this.plugin.saveSettings();
@@ -318,16 +317,16 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       );
 
       setting.addButton((button) =>
-        button.setButtonText('Remove').onClick(async () => {
+        button.setButtonText(t('installed.button.remove')).onClick(async () => {
           try {
             await removePlugin(this.getAdapter(), this.getPluginManager(), id);
             delete this.plugin.settings.trackedPlugins[id];
             this.plugin.pendingUpdates.delete(id);
             await this.plugin.saveSettings();
-            new Notice(`Removed ${id}`);
+            new Notice(t('notice.removed', { id }));
             this.display();
           } catch (error) {
-            new Notice(`Failed to remove ${id}: ${(error as Error).message}`);
+            new Notice(t('notice.removeFailed', { id, message: (error as Error).message }));
           }
         })
       );
@@ -342,7 +341,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     // by which point listEl is assigned. Declared after the search box so
     // DOM order stays search-box-above-items, matching the native
     // heading → search → items structure.
-    this.createGroupSearch(groupEl, 'Filter by name, description, or author…', this.registrySearchQuery, (value) => {
+    this.createGroupSearch(groupEl, t('registry.searchPlaceholder'), this.registrySearchQuery, (value) => {
       this.registrySearchQuery = value;
       this.renderRegistryList(listEl, entries);
     });
@@ -367,7 +366,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
 
     if (filtered.length === 0) {
       containerEl.createEl('p', {
-        text: query ? 'No available plugins match your search.' : 'No plugins available.',
+        text: query ? t('registry.noMatch') : t('registry.empty'),
       });
       return;
     }
@@ -375,10 +374,16 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     for (const entry of filtered) {
       const setting = new Setting(containerEl)
         .setName(entry.name)
-        .setDesc(`${entry.description} — by ${entry.author} — latest v${entry.latestVersion ?? 'n/a'}`)
+        .setDesc(
+          t('registry.desc', {
+            description: entry.description,
+            author: entry.author,
+            version: entry.latestVersion ?? 'n/a',
+          })
+        )
         .addButton((button) =>
           button
-            .setButtonText('Install')
+            .setButtonText(t('registry.button.install'))
             .setCta()
             .onClick(async () => {
               try {
@@ -386,12 +391,12 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
                 const sorted = sortVersionsNewestFirst(versions.versions);
                 const candidate = selectUpdateCandidate(sorted, false);
                 if (!candidate) {
-                  new Notice(`No installable version found for ${entry.name}`);
+                  new Notice(t('notice.noInstallableVersion', { name: entry.name }));
                   return;
                 }
                 await this.installVersion(entry, candidate);
               } catch (error) {
-                new Notice(`Failed to install ${entry.name}: ${(error as Error).message}`);
+                new Notice(t('notice.installFailed', { name: entry.name, message: (error as Error).message }));
               }
             })
         );
@@ -401,7 +406,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       // floating below it.
       const versionRow = setting.descEl.createEl('div');
       versionRow.style.marginTop = '0.35rem';
-      const pickVersionLink = versionRow.createEl('a', { text: 'Install a specific version…', href: '#' });
+      const pickVersionLink = versionRow.createEl('a', { text: t('registry.pickVersionLink'), href: '#' });
       pickVersionLink.style.fontSize = '0.8em';
       pickVersionLink.style.opacity = '0.7';
       pickVersionLink.addEventListener('click', (evt) => {
@@ -418,19 +423,19 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
    * "Install" (latest), not a version choice the user has to make first.
    */
   private async renderVersionPicker(containerEl: HTMLElement, entry: RegistryEntry): Promise<void> {
-    containerEl.setText('Loading versions…');
+    containerEl.setText(t('registry.versionPicker.loading'));
     let sorted: VersionEntry[];
     try {
       const versions = await fetchVersions(this.plugin.settings.mirrorBaseUrl, entry.repo, this.plugin.fetchFn);
       sorted = sortVersionsNewestFirst(versions.versions);
     } catch (error) {
-      containerEl.setText(`Failed to load versions: ${(error as Error).message}`);
+      containerEl.setText(t('registry.versionPicker.loadError', { message: (error as Error).message }));
       return;
     }
 
     containerEl.empty();
     if (sorted.length === 0) {
-      containerEl.setText('No versions available.');
+      containerEl.setText(t('registry.versionPicker.empty'));
       return;
     }
 
@@ -438,11 +443,13 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     for (const version of sorted) {
       select.createEl('option', {
         value: version.version,
-        text: version.prerelease ? `${version.version} (prerelease)` : version.version,
+        text: version.prerelease
+          ? t('registry.versionPicker.prereleaseLabel', { version: version.version })
+          : version.version,
       });
     }
 
-    const installButton = containerEl.createEl('button', { text: 'Install' });
+    const installButton = containerEl.createEl('button', { text: t('registry.button.install') });
     installButton.style.marginLeft = '0.5rem';
     installButton.addEventListener('click', async () => {
       const chosen = sorted.find((v) => v.version === select.value);
@@ -468,10 +475,10 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         name: entry.name,
       };
       await this.plugin.saveSettings();
-      new Notice(`Installed ${entry.name} v${candidate.version}`);
+      new Notice(t('notice.installed', { name: entry.name, version: candidate.version }));
       this.display();
     } catch (error) {
-      new Notice(`Failed to install ${entry.name}: ${(error as Error).message}`);
+      new Notice(t('notice.installFailed', { name: entry.name, message: (error as Error).message }));
     }
   }
 }

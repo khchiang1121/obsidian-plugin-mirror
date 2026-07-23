@@ -4,6 +4,7 @@ import { checkForUpdates, applyUpdate, type UpdateCheckResult } from './updater'
 import { MirrorInstallerSettingTab } from './settingsTab';
 import type { VaultAdapterLike, PluginManagerLike } from './installer';
 import { createObsidianFetch, type FetchLike } from './obsidianFetch';
+import { detectLocale, setLocale, t } from './i18n';
 
 export default class MirrorInstallerPlugin extends Plugin {
   settings!: PluginSettings;
@@ -13,12 +14,14 @@ export default class MirrorInstallerPlugin extends Plugin {
   fetchFn: FetchLike = createObsidianFetch(requestUrl);
 
   async onload(): Promise<void> {
+    setLocale(detectLocale(window.localStorage.getItem('language')));
+
     this.settings = mergeSettings(await this.loadData());
     this.addSettingTab(new MirrorInstallerSettingTab(this.app, this));
 
     this.addCommand({
       id: 'check-for-mirror-plugin-updates',
-      name: 'Check for mirrored plugin updates',
+      name: t('command.checkForUpdates'),
       callback: () => {
         void this.runUpdateCheck();
       },
@@ -96,16 +99,18 @@ export default class MirrorInstallerPlugin extends Plugin {
     await this.saveSettings();
 
     if (installedIds.length > 0) {
-      new Notice(`Updated ${installedIds.length} mirrored plugin(s): ${installedIds.join(', ')}`);
+      new Notice(t('notice.autoUpdated', { count: installedIds.length, list: installedIds.join(', ') }));
     }
     if (failedIds.length > 0) {
-      new Notice(`Failed to auto-install ${failedIds.length} mirrored plugin update(s): ${failedIds.join(', ')}`);
+      new Notice(t('notice.autoUpdateFailed', { count: failedIds.length, list: failedIds.join(', ') }));
     }
     if (errors.length > 0) {
       for (const errorResult of errors) {
         console.error(`Update check failed for ${errorResult.pluginId}: ${errorResult.error}`);
       }
-      new Notice(`Failed to check updates for ${errors.length} mirrored plugin(s): ${errors.map((e) => e.pluginId).join(', ')}`);
+      new Notice(
+        t('notice.checkFailed', { count: errors.length, list: errors.map((e) => e.pluginId).join(', ') })
+      );
     }
   }
 }
