@@ -1,7 +1,7 @@
 {
   "id": "obsidian-mirror-installer",
   "name": "Mirror Installer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minAppVersion": "1.0.0",
   "description": "Browse, install, and update beta plugins mirrored on an internal nginx server, for use inside networks without GitHub access.",
   "author": "khchiang1121",
