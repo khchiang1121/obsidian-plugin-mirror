@@ -4,12 +4,11 @@ import { fetchIndex, fetchVersions, type RegistryEntry, type VersionEntry } from
 import { sortVersionsNewestFirst, selectUpdateCandidate } from './versionCompare';
 import {
   installPluginVersion,
-  downloadPluginFiles,
   removePlugin,
   type VaultAdapterLike,
   type PluginManagerLike,
 } from './installer';
-import { checkSelfUpdate } from './selfUpdate';
+import { checkSelfUpdate, downloadSelfUpdate } from './selfUpdate';
 import { t } from './i18n';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
@@ -47,8 +46,8 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     // This plugin's own version lives here, among the other global settings
     // — not as a separate section, and not inside "Installed mirrored
     // plugins" (which only ever lists *other* plugins; see checkForUpdates'
-    // excludeIds in main.ts). Filled in once loadPluginLists has the
-    // registry — see renderSelfVersionRow.
+    // excludeIds in main.ts). Checked independently of the registry fetch
+    // below — see renderSelfVersionRow.
     const selfVersionSetting = new Setting(containerEl)
       .setName(t('self.name'))
       .setDesc(t('self.status.checking', { version: this.plugin.manifest.version }));
@@ -151,6 +150,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     registryGroup: HTMLElement,
     registryHeadingEl: HTMLElement
   ): Promise<void> {
+    // Independent of the registry fetch below — it hits its own fixed
+    // endpoint, so a slow or failing 200-plugin registry never blocks or
+    // delays this plugin's own version check.
+    void this.renderSelfVersionRow(selfVersionSetting);
+
     await this.plugin.runUpdateCheck();
 
     let entries: RegistryEntry[];
@@ -158,9 +162,6 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       const index = await fetchIndex(this.plugin.settings.mirrorBaseUrl, this.plugin.fetchFn);
       entries = index.plugins;
     } catch (error) {
-      selfVersionSetting.setDesc(
-        t('self.status.error', { version: this.plugin.manifest.version, message: (error as Error).message })
-      );
       this.clearGroupBody(registryGroup, registryHeadingEl);
       registryGroup.createEl('p', { text: t('registry.loadError', { message: (error as Error).message }) });
       this.renderInstalledPlugins(installedGroup, installedHeadingEl);
@@ -170,7 +171,6 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     const selfId = this.plugin.manifest.id;
     const otherEntries = entries.filter((e) => e.id !== selfId);
 
-    await this.renderSelfVersionRow(selfVersionSetting, entries);
     this.renderInstalledPlugins(installedGroup, installedHeadingEl);
     this.renderRegistry(registryGroup, registryHeadingEl, otherEntries);
   }
@@ -184,18 +184,14 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
    * new files only, then asks the user to reload Obsidian to actually apply
    * them, rather than attempting any in-place self-reload.
    */
-  private async renderSelfVersionRow(setting: Setting, entries: RegistryEntry[]): Promise<void> {
+  private async renderSelfVersionRow(setting: Setting): Promise<void> {
     const selfId = this.plugin.manifest.id;
     const currentVersion = this.plugin.manifest.version;
 
-    const result = await checkSelfUpdate(this.plugin.settings.mirrorBaseUrl, entries, selfId, currentVersion, this.plugin.fetchFn);
+    const result = await checkSelfUpdate(this.plugin.settings.mirrorBaseUrl, currentVersion, this.plugin.fetchFn);
 
-    if (result.status === 'not-in-registry') {
-      setting.setDesc(t('self.status.notInRegistry', { version: currentVersion }));
-      return;
-    }
     if (result.status === 'error') {
-      setting.setDesc(t('self.status.error', { version: currentVersion, message: result.error ?? '' }));
+      setting.setDesc(t('self.status.error', { version: currentVersion, message: result.error }));
       return;
     }
     if (result.status === 'up-to-date') {
@@ -203,23 +199,15 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       return;
     }
 
-    const candidate = result.candidate!;
-    const repo = result.repo!;
-    setting.setDesc(t('self.status.updateAvailable', { version: currentVersion, newVersion: candidate.version }));
+    setting.setDesc(t('self.status.updateAvailable', { version: currentVersion, newVersion: result.version }));
     setting.addButton((button) =>
       button
         .setButtonText(t('self.button.update'))
         .setCta()
         .onClick(async () => {
           try {
-            await downloadPluginFiles(
-              this.getAdapter(),
-              this.plugin.settings.mirrorBaseUrl,
-              selfId,
-              { repo, version: candidate.version, files: candidate.files },
-              this.plugin.fetchFn
-            );
-            new Notice(t('notice.selfUpdated', { version: candidate.version }), 10000);
+            await downloadSelfUpdate(this.getAdapter(), this.plugin.settings.mirrorBaseUrl, selfId, this.plugin.fetchFn);
+            new Notice(t('notice.selfUpdated', { version: result.version }), 10000);
           } catch (error) {
             new Notice(t('notice.selfUpdateFailed', { message: (error as Error).message }));
           }

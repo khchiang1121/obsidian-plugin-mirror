@@ -45,6 +45,11 @@ curl http://localhost:8087/index.json
 
 Re-running `npm run build:image` only downloads what changed and prunes anything that fell outside retention — it never re-fetches everything from scratch.
 
+The same nginx container also serves:
+- `/health` — a plain `200 ok`, independent of the mirror content, for orchestrator/load-balancer liveness checks. The image also declares a Docker `HEALTHCHECK` against it.
+- `/docs/` — this project's documentation site (`docs/index.html`), bundled into the image so it's reachable from inside the restricted network too, not just via GitHub Pages.
+- `/self/manifest.json` and `/self/main.js` — the installer plugin's own current build (a dedicated Node build stage always compiles it from source, since `main.js` is gitignored). Fixed, version-less path: no `index.json` entry, no version history, since self-update only ever needs "the current build, right now." This is what the plugin's own self-update check reads.
+
 #### Keeping `tracked-plugins.json` current
 
 ```bash
@@ -56,17 +61,11 @@ npm run sync-top-plugins -- --replace-moved     # also update repos that transfe
 
 Ranks Obsidian's community plugins by download count (from `community-plugins.json` / `community-plugin-stats.json` in [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases)) and appends any not already tracked. It never removes an existing entry — a plugin whose repo appears to have moved (same repo name, different owner) is only reported, not swapped, unless you pass `--replace-moved`.
 
-#### Releasing a new obsidian-installer-plugin version without re-fetching everything else
+#### Why obsidian-installer-plugin isn't in tracked-plugins.json
 
-`obsidian-installer-plugin/` releases are deliberately **not** listed in `tracked-plugins.json` — cutting a new release of this plugin shouldn't require (or trigger) re-fetching all ~200 tracked open-source plugins. Instead, update just that one entry in an existing `dist/`:
+`obsidian-installer-plugin/` is deliberately **not** listed in `tracked-plugins.json` and has no `index.json` entry — cutting a new build of it shouldn't require (or trigger) re-fetching all ~200 tracked open-source plugins, and self-update only ever needs "the current build, right now," not a version history. Every `docker build` compiles it from source and serves it at `/self/manifest.json` / `/self/main.js` (see above) — no separate release step.
 
-```bash
-cd mirror-builder
-npm run update-one -- --repo khchiang1121/obsidian-plugin-mirror --out dist
-docker build -t obsidian-plugin-mirror -f Dockerfile .
-```
-
-Fetches releases for exactly the repo passed to `--repo`, merges its entry into the existing `dist/index.json` in place, and leaves every other plugin's files and index entry untouched. `--retain`/`--min-stable-retain` work the same as the main config (defaults: `5` / `0`). Works for any single tracked repo, not just this plugin.
+The build context is the repo root (`..`, since `Dockerfile` lives in `mirror-builder/` but also bundles `docs/` — see below), not `mirror-builder/` itself.
 
 ### Install the vault plugin (`obsidian-installer-plugin/`)
 
@@ -83,8 +82,8 @@ Copy `manifest.json`, `main.js`, and `versions.json` into `<vault>/.obsidian/plu
 Each subsystem is an independent npm package with its own test suite:
 
 ```bash
-cd mirror-builder && npm test              # 37 tests, vitest
-cd obsidian-installer-plugin && npm test   # 30 tests, vitest
+cd mirror-builder && npm test              # 61 tests, vitest
+cd obsidian-installer-plugin && npm test   # 69 tests, vitest
 ```
 
 Design specs and implementation plans for both subsystems live under [`docs/superpowers/`](docs/superpowers).

@@ -11,7 +11,6 @@ export const en = {
   'self.name': 'Mirror Installer version',
   'self.status.checking': 'Installed v{version} — checking for updates…',
   'self.status.error': 'Installed v{version} — failed to check for updates: {message}',
-  'self.status.notInRegistry': "Installed v{version} — not found in the mirror's registry.",
   'self.status.upToDate': 'Installed v{version} — up to date.',
   'self.status.updateAvailable': 'Installed v{version} — update available: v{newVersion}',
   'self.button.update': 'Update',

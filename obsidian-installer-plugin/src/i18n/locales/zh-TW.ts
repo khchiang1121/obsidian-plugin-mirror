@@ -13,7 +13,6 @@ export const zhTW: Record<keyof typeof en, string> = {
   'self.name': 'Mirror Installer 版本',
   'self.status.checking': '已安裝 v{version} — 正在檢查更新…',
   'self.status.error': '已安裝 v{version} — 檢查更新失敗：{message}',
-  'self.status.notInRegistry': '已安裝 v{version} — 在鏡像清單中找不到此外掛。',
   'self.status.upToDate': '已安裝 v{version} — 已是最新版本。',
   'self.status.updateAvailable': '已安裝 v{version} — 有可用更新：v{newVersion}',
   'self.button.update': '更新',

@@ -41,7 +41,7 @@ function trimTrailingSlash(url: string): string {
  * versions.json are rewritten in place on every mirror rebuild, so a cached
  * hit here means silently-stale data with no error to signal it.
  */
-function cacheBust(url: string): string {
+export function cacheBust(url: string): string {
   return `${url}?_=${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 

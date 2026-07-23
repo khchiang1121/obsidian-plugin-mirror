@@ -1,0 +1,11 @@
+.git
+.claude
+.env
+.env.*
+node_modules
+mirror-builder/node_modules
+mirror-builder/test
+mirror-builder/build
+obsidian-installer-plugin/node_modules
+obsidian-installer-plugin/test
+obsidian-installer-plugin/build
