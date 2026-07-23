@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "generate": "tsx src/cli.ts",
+    "sync-top-plugins": "tsx src/syncTopPlugins.ts",
     "test": "vitest run",
-    "build:image": "npm run generate -- --config tracked-plugins.json --out dist && docker build -t obsidian-plugin-mirror -f Dockerfile ."
+    "build:image": "npm run generate -- --config tracked-plugins.json --out dist && docker build -t khchiang1121/obsidian-plugin-mirror:v20260723 -f Dockerfile ."
   },
   "keywords": [],
   "author": "",

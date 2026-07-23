@@ -45,6 +45,17 @@ curl http://localhost:8087/index.json
 
 Re-running `npm run build:image` only downloads what changed and prunes anything that fell outside retention — it never re-fetches everything from scratch.
 
+#### Keeping `tracked-plugins.json` current
+
+```bash
+cd mirror-builder
+npm run sync-top-plugins -- --top 200          # add any new top-200-by-downloads plugins, additive only
+npm run sync-top-plugins -- --top 200 --dry-run # preview without writing
+npm run sync-top-plugins -- --replace-moved     # also update repos that transferred to a new owner
+```
+
+Ranks Obsidian's community plugins by download count (from `community-plugins.json` / `community-plugin-stats.json` in [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases)) and appends any not already tracked. It never removes an existing entry — a plugin whose repo appears to have moved (same repo name, different owner) is only reported, not swapped, unless you pass `--replace-moved`.
+
 ### Install the vault plugin (`obsidian-installer-plugin/`)
 
 ```bash
