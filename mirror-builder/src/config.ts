@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 export interface PluginConfigEntry {
   repo: string;
   retain?: number | 'all';
+  minStableRetain?: number;
 }
 
 export interface TrackedPluginsConfig {
   defaultRetain: number | 'all';
+  defaultMinStableRetain: number;
   plugins: PluginConfigEntry[];
 }
 
@@ -17,6 +19,10 @@ const REPO_PATTERN = /^[\w.-]+\/[\w.-]+$/;
 function isValidRetain(value: unknown): value is number | 'all' {
   if (value === 'all') return true;
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
+function isValidMinStableRetain(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
 export function loadConfig(filePath: string): TrackedPluginsConfig {
@@ -43,6 +49,11 @@ export function loadConfig(filePath: string): TrackedPluginsConfig {
     throw new ConfigError('"defaultRetain" must be a positive integer or "all"');
   }
 
+  if (obj.defaultMinStableRetain !== undefined && !isValidMinStableRetain(obj.defaultMinStableRetain)) {
+    throw new ConfigError('"defaultMinStableRetain" must be a non-negative integer');
+  }
+  const defaultMinStableRetain = (obj.defaultMinStableRetain as number | undefined) ?? 0;
+
   if (!Array.isArray(obj.plugins) || obj.plugins.length === 0) {
     throw new ConfigError('"plugins" must be a non-empty array');
   }
@@ -58,8 +69,15 @@ export function loadConfig(filePath: string): TrackedPluginsConfig {
     if (e.retain !== undefined && !isValidRetain(e.retain)) {
       throw new ConfigError(`plugins[${i}].retain must be a positive integer or "all"`);
     }
-    return { repo: e.repo, retain: e.retain as number | 'all' | undefined };
+    if (e.minStableRetain !== undefined && !isValidMinStableRetain(e.minStableRetain)) {
+      throw new ConfigError(`plugins[${i}].minStableRetain must be a non-negative integer`);
+    }
+    return {
+      repo: e.repo,
+      retain: e.retain as number | 'all' | undefined,
+      minStableRetain: e.minStableRetain as number | undefined,
+    };
   });
 
-  return { defaultRetain: obj.defaultRetain, plugins };
+  return { defaultRetain: obj.defaultRetain, defaultMinStableRetain, plugins };
 }

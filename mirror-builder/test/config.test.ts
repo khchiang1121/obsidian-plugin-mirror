@@ -8,10 +8,29 @@ describe('loadConfig', () => {
     const config = loadConfig(fixture('valid.json'));
     expect(config.defaultRetain).toBe(5);
     expect(config.plugins).toEqual([
-      { repo: 'acme/plugin-one', retain: undefined },
-      { repo: 'acme/plugin-two', retain: 10 },
-      { repo: 'acme/plugin-three', retain: 'all' },
+      { repo: 'acme/plugin-one', retain: undefined, minStableRetain: undefined },
+      { repo: 'acme/plugin-two', retain: 10, minStableRetain: 3 },
+      { repo: 'acme/plugin-three', retain: 'all', minStableRetain: undefined },
     ]);
+  });
+
+  it('defaults defaultMinStableRetain to 0 and parses per-plugin minStableRetain', () => {
+    const config = loadConfig(fixture('valid.json'));
+    expect(config.defaultMinStableRetain).toBe(0);
+    expect(config.plugins).toEqual([
+      { repo: 'acme/plugin-one', retain: undefined, minStableRetain: undefined },
+      { repo: 'acme/plugin-two', retain: 10, minStableRetain: 3 },
+      { repo: 'acme/plugin-three', retain: 'all', minStableRetain: undefined },
+    ]);
+  });
+
+  it('parses an explicit defaultMinStableRetain', () => {
+    const config = loadConfig(fixture('valid-with-min-stable-retain.json'));
+    expect(config.defaultMinStableRetain).toBe(2);
+  });
+
+  it('throws ConfigError when minStableRetain is negative or not an integer', () => {
+    expect(() => loadConfig(fixture('invalid-min-stable-retain.json'))).toThrow(ConfigError);
   });
 
   it('throws ConfigError when the file does not exist', () => {
