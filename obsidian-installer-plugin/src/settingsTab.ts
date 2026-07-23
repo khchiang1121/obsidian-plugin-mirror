@@ -115,7 +115,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       .setName('Search installed plugins')
       .addSearch((search) =>
         search
-          .setPlaceholder('Filter by plugin id…')
+          .setPlaceholder('Filter by name or plugin id…')
           .setValue(this.installedSearchQuery)
           .onChange((value) => {
             this.installedSearchQuery = value;
@@ -130,7 +130,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     containerEl.empty();
     const tracked = this.plugin.settings.trackedPlugins;
     const query = this.installedSearchQuery.trim().toLowerCase();
-    const ids = Object.keys(tracked).filter((id) => !query || id.toLowerCase().includes(query));
+    const ids = Object.keys(tracked).filter((id) => {
+      if (!query) return true;
+      const name = tracked[id].name;
+      return id.toLowerCase().includes(query) || (name?.toLowerCase().includes(query) ?? false);
+    });
 
     if (ids.length === 0) {
       containerEl.createEl('p', { text: 'No installed plugins match your search.' });
@@ -141,7 +145,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       const entry = tracked[id];
       const pending = this.plugin.pendingUpdates.get(id);
       const setting = new Setting(containerEl)
-        .setName(id)
+        .setName(entry.name ?? id)
         .setDesc(
           pending?.candidate
             ? `Installed v${entry.installedVersion} — update available: v${pending.candidate.version}`
@@ -333,6 +337,7 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         repo: entry.repo,
         installedVersion: candidate.version,
         allowPrerelease: false,
+        name: entry.name,
       };
       await this.plugin.saveSettings();
       new Notice(`Installed ${entry.name} v${candidate.version}`);

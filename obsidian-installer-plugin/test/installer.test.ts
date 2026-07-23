@@ -181,7 +181,7 @@ function registryEntry(overrides: Partial<RegistryEntry> = {}): RegistryEntry {
 }
 
 describe('adoptUntrackedInstalledPlugins', () => {
-  it('adopts a registry plugin found on disk but not yet tracked', async () => {
+  it('adopts a registry plugin found on disk but not yet tracked, storing its display name', async () => {
     adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '1.0.0' });
     const trackedPlugins: Record<string, TrackedPlugin> = {};
 
@@ -192,13 +192,14 @@ describe('adoptUntrackedInstalledPlugins', () => {
       repo: 'acme/plugin',
       installedVersion: '1.0.0',
       allowPrerelease: false,
+      name: 'Acme Plugin',
     });
   });
 
-  it('does not touch a plugin that is already tracked', async () => {
+  it('does not touch the version or prerelease flag of a plugin that is already tracked', async () => {
     adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '2.0.0' });
     const trackedPlugins: Record<string, TrackedPlugin> = {
-      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: true },
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: true, name: 'Acme Plugin' },
     };
 
     const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [registryEntry()]);
@@ -208,7 +209,29 @@ describe('adoptUntrackedInstalledPlugins', () => {
       repo: 'acme/plugin',
       installedVersion: '1.0.0',
       allowPrerelease: true,
+      name: 'Acme Plugin',
     });
+  });
+
+  it('backfills the display name for an already-tracked plugin that predates name tracking', async () => {
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: false },
+    };
+
+    const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [registryEntry({ name: 'Acme Plugin' })]);
+
+    expect(adopted).toEqual([]);
+    expect(trackedPlugins['acme-plugin'].name).toBe('Acme Plugin');
+  });
+
+  it('syncs a tracked plugin name that has drifted from the registry', async () => {
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: false, name: 'Old Name' },
+    };
+
+    await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [registryEntry({ name: 'New Name' })]);
+
+    expect(trackedPlugins['acme-plugin'].name).toBe('New Name');
   });
 
   it('skips registry entries with no matching plugin folder on disk', async () => {
@@ -227,13 +250,13 @@ describe('adoptUntrackedInstalledPlugins', () => {
 
     const adopted = await adoptUntrackedInstalledPlugins(adapter, trackedPlugins, [
       registryEntry(),
-      registryEntry({ id: 'other-plugin', repo: 'other/plugin' }),
+      registryEntry({ id: 'other-plugin', repo: 'other/plugin', name: 'Other Plugin' }),
     ]);
 
     expect(adopted.sort()).toEqual(['acme-plugin', 'other-plugin']);
     expect(trackedPlugins).toEqual({
-      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: false },
-      'other-plugin': { repo: 'other/plugin', installedVersion: '3.1.0', allowPrerelease: false },
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: false, name: 'Acme Plugin' },
+      'other-plugin': { repo: 'other/plugin', installedVersion: '3.1.0', allowPrerelease: false, name: 'Other Plugin' },
     });
   });
 });

@@ -2,6 +2,7 @@ export interface TrackedPlugin {
   repo: string;
   installedVersion: string;
   allowPrerelease: boolean;
+  name?: string;
 }
 
 export interface PluginSettings {

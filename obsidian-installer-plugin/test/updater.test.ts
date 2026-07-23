@@ -228,6 +228,7 @@ describe('checkForUpdates', () => {
       repo: 'acme/plugin-one',
       installedVersion: '1.0.0',
       allowPrerelease: false,
+      name: 'Plugin One',
     });
     expect(results).toEqual([
       {

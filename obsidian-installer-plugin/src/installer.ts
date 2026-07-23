@@ -72,8 +72,11 @@ export async function readInstalledManifestVersion(
  * Finds registry plugins that are already installed on disk (e.g. via
  * Obsidian's built-in Community Plugins browser, BRAT, or a manual copy)
  * but aren't yet in trackedPlugins, and folds them in — using the real
- * on-disk manifest.json version as ground truth. Mutates trackedPlugins in
- * place and returns the ids that were adopted.
+ * on-disk manifest.json version as ground truth. Also backfills/syncs the
+ * display name of already-tracked plugins from the registry, so the
+ * "Installed" list never falls back to showing a bare plugin id. Mutates
+ * trackedPlugins in place and returns the ids that were newly adopted (name
+ * syncs on already-tracked plugins aren't included).
  */
 export async function adoptUntrackedInstalledPlugins(
   adapter: VaultAdapterLike,
@@ -82,10 +85,16 @@ export async function adoptUntrackedInstalledPlugins(
 ): Promise<string[]> {
   const adoptedIds: string[] = [];
   for (const entry of registryEntries) {
-    if (trackedPlugins[entry.id]) continue;
+    const existing = trackedPlugins[entry.id];
+    if (existing) {
+      if (existing.name !== entry.name) {
+        existing.name = entry.name;
+      }
+      continue;
+    }
     const installedVersion = await readInstalledManifestVersion(adapter, entry.id);
     if (!installedVersion) continue;
-    trackedPlugins[entry.id] = { repo: entry.repo, installedVersion, allowPrerelease: false };
+    trackedPlugins[entry.id] = { repo: entry.repo, installedVersion, allowPrerelease: false, name: entry.name };
     adoptedIds.push(entry.id);
   }
   return adoptedIds;
