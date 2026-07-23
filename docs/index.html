@@ -1,581 +1,1171 @@
-<title>Obsidian Plugin Mirror</title>
-<style>
-  :root {
-    --paper: #eef2ef;
-    --paper-raised: #e4ebe7;
-    --line: #c3d0c9;
-    --line-strong: #9db0a5;
-    --ink: #10241e;
-    --ink-muted: #52685f;
-    --accent: #0e7a63;
-    --accent-ink: #ffffff;
-    --focus: #0e7a63;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --paper: #0c1512;
-      --paper-raised: #101c17;
-      --line: #24352f;
-      --line-strong: #345349;
-      --ink: #e3ece8;
-      --ink-muted: #8ea298;
-      --accent: #2fd6ac;
-      --accent-ink: #06140f;
-      --focus: #2fd6ac;
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Obsidian Plugin Mirror — Documentation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── THEMES ── */
+    :root, [data-theme="light"] {
+      --sidebar-w: 260px;
+      --bg: #ffffff;
+      --surface: #f6f8fa;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --warn: #9a6700;
+      --danger: #d1242f;
+      --text: #1f2328;
+      --muted: #656d76;
+      --subtle: #818b98;
+      --code-bg: #f6f8fa;
+      --code-border: #d0d7de;
+      --code-text: #24292f;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --topbar-bg: rgba(255,255,255,0.92);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      color-scheme: light;
     }
-  }
-  :root[data-theme="dark"] {
-    --paper: #0c1512;
-    --paper-raised: #101c17;
-    --line: #24352f;
-    --line-strong: #345349;
-    --ink: #e3ece8;
-    --ink-muted: #8ea298;
-    --accent: #2fd6ac;
-    --accent-ink: #06140f;
-    --focus: #2fd6ac;
-  }
 
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: Iowan Old Style, "Palatino Linotype", Palatino, Georgia, "Noto Serif", serif;
-    font-size: 17px;
-    line-height: 1.65;
-  }
-  .mono {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    font-variant-numeric: tabular-nums;
-  }
-  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-  a:focus-visible, button:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
-  }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --surface: #161b22;
+      --border: #21262d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --warn: #d29922;
+      --danger: #f85149;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --subtle: #6e7681;
+      --code-bg: #161b22;
+      --code-border: #30363d;
+      --code-text: #e6edf3;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --topbar-bg: rgba(15,17,23,0.92);
+      color-scheme: dark;
+    }
 
-  code, pre {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-  }
-  code {
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    padding: 0.1em 0.35em;
-    font-size: 0.87em;
-  }
+    /* ── BASE ── */
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+      transition: background 0.2s, color 0.2s;
+    }
 
-  .sheet {
-    position: relative;
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-  }
-  .sheet::before, .sheet::after,
-  .sheet > .corner-tl, .sheet > .corner-br {
-    content: "";
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    pointer-events: none;
-  }
-  .sheet::before { /* top-left */
-    top: -1px; left: -1px;
-    border-top: 2px solid var(--accent);
-    border-left: 2px solid var(--accent);
-  }
-  .sheet::after { /* bottom-right */
-    bottom: -1px; right: -1px;
-    border-bottom: 2px solid var(--accent);
-    border-right: 2px solid var(--accent);
-  }
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: background 0.2s, border-color 0.2s;
+    }
 
-  /* ---------- title block header ---------- */
-  .titleblock {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 3.4rem 1.5rem 2.2rem;
-  }
-  .titleblock .eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    color: var(--ink-muted);
-    text-transform: uppercase;
-  }
-  .titleblock h1 {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    font-size: clamp(1.7rem, 4.6vw, 2.5rem);
-    font-weight: 700;
-    margin: 0.5rem 0 0.9rem;
-    text-wrap: balance;
-    border-bottom: 3px solid var(--accent);
-    padding-bottom: 1rem;
-    display: inline-block;
-  }
-  .titleblock p.lead {
-    max-width: 62ch;
-    color: var(--ink);
-    font-size: 1.08rem;
-    margin: 0 0 1.8rem;
-  }
-  .metarow {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-  }
-  .metarow dl {
-    margin: 0;
-    padding: 0.7rem 1.4rem 0.7rem 0;
-    border-right: 1px solid var(--line);
-    min-width: 150px;
-    flex: 1;
-  }
-  .metarow dl:last-child { border-right: none; }
-  .metarow dt {
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    margin-bottom: 0.25rem;
-  }
-  .metarow dd {
-    margin: 0;
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.86rem;
-  }
-  .titleblock .links {
-    margin-top: 1.6rem;
-    display: flex;
-    gap: 1.4rem;
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.86rem;
-  }
-  .titleblock .links a::before { content: "→ "; color: var(--accent); }
+    .sidebar-logo {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.3px;
+    }
+    .sidebar-logo span {
+      font-size: 11px;
+      color: var(--muted);
+      display: block;
+      margin-top: 3px;
+    }
 
-  /* ---------- main / sheets ---------- */
-  main {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 1.5rem 5rem;
-  }
-  section { margin-top: 3.6rem; }
-  .sheet-label {
-    display: flex;
-    align-items: baseline;
-    gap: 0.7rem;
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.74rem;
-    letter-spacing: 0.1em;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-  }
-  .sheet-label .rule { flex: 1; height: 1px; background: var(--line-strong); }
-  section h2 {
-    font-family: Iowan Old Style, "Palatino Linotype", Georgia, serif;
-    font-weight: 600;
-    font-size: 1.5rem;
-    margin: 0 0 0.5rem;
-    text-wrap: balance;
-  }
-  section > p.dek {
-    color: var(--ink-muted);
-    margin: 0 0 1.6rem;
-    max-width: 62ch;
-  }
+    .sidebar nav { padding: 12px 0; flex: 1; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 20px 4px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 20px;
+      font-size: 13.5px;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(128,128,128,0.07); }
+    .nav-link.active { color: var(--accent); border-left-color: var(--accent); background: rgba(9,105,218,0.07); }
+    [data-theme="dark"] .nav-link.active { background: rgba(88,166,255,0.08); }
+    .nav-link .icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
 
-  /* ---------- schematic diagram ---------- */
-  .schematic {
-    border: 1px solid var(--line);
-    background-image:
-      linear-gradient(var(--line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--line) 1px, transparent 1px);
-    background-size: 22px 22px;
-    background-position: -1px -1px;
-    opacity: 1;
-    padding: 2.4rem 1.6rem;
-    overflow-x: auto;
-  }
-  .schematic-row {
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    min-width: 660px;
-  }
-  .schem-box {
-    flex: 1;
-    background: var(--paper);
-    padding: 1.1rem 1.2rem;
-  }
-  .schem-box h3 {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    font-size: 0.82rem;
-    margin: 0 0 0.5rem;
-  }
-  .schem-box p {
-    margin: 0;
-    font-size: 0.86rem;
-    color: var(--ink-muted);
-    font-family: Iowan Old Style, "Palatino Linotype", Georgia, serif;
-  }
-  .schem-link {
-    flex: 0 0 84px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.62rem;
-    color: var(--ink-muted);
-    letter-spacing: 0.02em;
-    padding: 0 0.4rem;
-  }
-  .schem-link .dashes {
-    width: 100%;
-    height: 0;
-    border-top: 2px dashed var(--line-strong);
-    margin-bottom: 0.5rem;
-    position: relative;
-  }
-  .schem-link .dashes::after {
-    content: "▸";
-    position: absolute;
-    right: -4px;
-    top: -9px;
-    color: var(--accent);
-  }
+    /* ── MAIN ── */
+    .main { margin-left: var(--sidebar-w); min-height: 100vh; }
 
-  /* ---------- cards ---------- */
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.1rem;
-    margin-top: 1.4rem;
-  }
-  .card { padding: 1.3rem 1.4rem 1.4rem; }
-  .card h3 {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.92rem;
-    margin: 0 0 0.55rem;
-  }
-  .card p { margin: 0 0 0.9rem; color: var(--ink-muted); font-size: 0.94rem; }
-  .card .stack {
-    display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; padding: 0; list-style: none;
-  }
-  .card .stack li {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.7rem;
-    color: var(--ink-muted);
-    border: 1px solid var(--line);
-    padding: 0.15rem 0.5rem;
-  }
-  .card a.go {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.8rem;
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .card a.go::before { content: "→ "; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      background: var(--topbar-bg);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-crumb { font-size: 13px; color: var(--muted); }
+    .topbar-crumb strong { color: var(--text); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-badge {
+      font-size: 11px;
+      background: rgba(26,127,55,0.12);
+      color: var(--accent2);
+      border: 1px solid rgba(26,127,55,0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    [data-theme="dark"] .topbar-badge {
+      background: rgba(63,185,80,0.15);
+      border-color: rgba(63,185,80,0.3);
+    }
 
-  /* ---------- quick start terminals ---------- */
-  .step {
-    margin-bottom: 1.7rem;
-  }
-  .step .step-head {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    margin-bottom: 0.5rem;
-  }
-  .step .step-num {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    color: var(--accent);
-    font-size: 0.8rem;
-  }
-  .step strong { font-size: 1.02rem; font-weight: 600; }
-  .step p { margin: 0.6rem 0 0; color: var(--ink); font-size: 0.96rem; }
-  .term {
-    border: 1px solid var(--line);
-    background: var(--paper-raised);
-  }
-  .term-bar {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    padding: 0.4rem 0.8rem;
-    border-bottom: 1px solid var(--line);
-  }
-  .term pre {
-    margin: 0;
-    padding: 0.9rem 1rem;
-    overflow-x: auto;
-    font-size: 0.84rem;
-    line-height: 1.55;
-  }
-  .term code { background: none; border: none; padding: 0; }
+    /* ── THEME TOGGLE ── */
+    .theme-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover { background: var(--bg); color: var(--text); border-color: var(--accent); }
+    .theme-toggle .icon-sun  { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-sun  { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
-  /* ---------- limitations table ---------- */
-  .table-wrap { overflow-x: auto; }
-  table.limitations {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-    min-width: 480px;
-  }
-  table.limitations th, table.limitations td {
-    text-align: left;
-    padding: 0.65rem 1rem;
-    border-bottom: 1px solid var(--line);
-    vertical-align: top;
-  }
-  table.limitations th {
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    font-weight: 600;
-  }
-  table.limitations td:first-child { font-weight: 600; }
+    .content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 40px 120px;
+    }
 
-  footer {
-    max-width: 900px;
-    margin: 3rem auto 0;
-    padding: 1.3rem 1.5rem 3rem;
-    border-top: 3px solid var(--accent);
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.76rem;
-    color: var(--ink-muted);
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-  footer a { color: var(--ink-muted); }
+    /* ── SECTIONS ── */
+    .section { display: none; }
+    .section.active { display: block; }
 
-  @media (max-width: 620px) {
-    .schematic-row { flex-direction: column; min-width: 0; }
-    .schem-link { flex-direction: row; padding: 0.5rem 0; }
-    .schem-link .dashes { border-top: none; border-left: 2px dashed var(--line-strong); width: 0; height: 20px; margin: 0 0.6rem; }
-    .schem-link .dashes::after { top: auto; bottom: -10px; right: -6px; content: "▾"; }
-    .metarow dl { border-right: none; border-bottom: 1px solid var(--line); }
-  }
-</style>
+    /* ── TYPOGRAPHY ── */
+    h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 36px 0 12px;
+    }
+    h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin: 24px 0 8px;
+    }
+    p { margin-bottom: 14px; color: var(--text); }
+    ul, ol { padding-left: 22px; margin-bottom: 14px; }
+    li { margin-bottom: 6px; color: var(--text); }
+    strong { color: var(--text); font-weight: 600; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-<header class="titleblock">
-  <div class="eyebrow">Internal plugin distribution — offline &amp; restricted networks</div>
-  <h1>Obsidian Plugin Mirror</h1>
-  <p class="lead">
-    BRAT installs beta Obsidian plugins by talking straight to GitHub. On a
-    vault that can't reach <code>github.com</code>, that's a dead end. This
-    project mirrors plugin releases onto an internal static server, then
-    browses, installs, and updates them from inside the vault — GitHub is
-    never in the loop.
-  </p>
-  <div class="metarow">
-    <dl><dt>Replaces</dt><dd>BRAT (obsidian42-brat)</dd></dl>
-    <dl><dt>Built for</dt><dd>vaults with no GitHub access</dd></dl>
-    <dl><dt>Subsystems</dt><dd>2 — mirror-builder / installer</dd></dl>
-    <dl><dt>Contract</dt><dd>shared static-file format</dd></dl>
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, rgba(9,105,218,0.05) 0%, rgba(26,127,55,0.04) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 36px;
+      margin-bottom: 36px;
+    }
+    [data-theme="dark"] .hero {
+      background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(63,185,80,0.04) 100%);
+    }
+    .hero h2 { border: none; margin-bottom: 10px; padding: 0; }
+    .hero-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .chip {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid;
+      font-weight: 500;
+    }
+    .chip-blue  { color: var(--accent);  border-color: rgba(9,105,218,0.35);  background: rgba(9,105,218,0.07); }
+    .chip-green { color: var(--accent2); border-color: rgba(26,127,55,0.35);  background: rgba(26,127,55,0.07); }
+    .chip-yellow{ color: var(--warn);    border-color: rgba(154,103,0,0.35);  background: rgba(154,103,0,0.07); }
+    [data-theme="dark"] .chip-blue  { border-color: rgba(88,166,255,0.4);  background: rgba(88,166,255,0.08); }
+    [data-theme="dark"] .chip-green { border-color: rgba(63,185,80,0.4);   background: rgba(63,185,80,0.08); }
+    [data-theme="dark"] .chip-yellow{ border-color: rgba(210,153,34,0.4);  background: rgba(210,153,34,0.08); }
+
+    /* ── FLOW ── */
+    .flow {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .flow-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 100px; }
+    .flow-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      text-align: center;
+      color: var(--text);
+      width: 100%;
+    }
+    .flow-box small { color: var(--muted); }
+    .flow-box.accent { border-color: rgba(9,105,218,0.5);  background: rgba(9,105,218,0.06); }
+    .flow-box.green  { border-color: rgba(26,127,55,0.5);  background: rgba(26,127,55,0.06); }
+    [data-theme="dark"] .flow-box.accent { border-color: rgba(88,166,255,0.5);  background: rgba(88,166,255,0.07); }
+    [data-theme="dark"] .flow-box.green  { border-color: rgba(63,185,80,0.5);   background: rgba(63,185,80,0.07); }
+    .flow-arrow { display: flex; align-items: center; padding: 0 8px; margin-top: 20px; color: var(--muted); font-size: 18px; flex-shrink: 0; }
+
+    /* ── CODE ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      position: relative;
+    }
+    code {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--code-text);
+    }
+    p code, li code, td code {
+      background: rgba(128,128,128,0.1);
+      border: 1px solid var(--code-border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12.5px;
+    }
+    .lang-tag {
+      position: absolute;
+      top: 8px; right: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .kw  { color: #cf222e; } [data-theme="dark"] .kw  { color: #ff7b72; }
+    .str { color: #0a3069; } [data-theme="dark"] .str { color: #a5d6ff; }
+    .cmt { color: #8c959f; } [data-theme="dark"] .cmt { color: #8b949e; }
+    .val { color: #0550ae; } [data-theme="dark"] .val { color: #79c0ff; }
+    .fn  { color: #6639ba; } [data-theme="dark"] .fn  { color: #d2a8ff; }
+    .num { color: #0550ae; } [data-theme="dark"] .num { color: #f2cc60; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 12px 0 24px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead th {
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(128,128,128,0.04); }
+
+    /* ── CALLOUTS ── */
+    .callout {
+      border-left: 3px solid;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .callout p { margin: 0; }
+    .callout-info  { border-color: var(--accent);  background: rgba(9,105,218,0.07); }
+    .callout-warn  { border-color: var(--warn);    background: rgba(154,103,0,0.07); }
+    .callout-tip   { border-color: var(--accent2); background: rgba(26,127,55,0.07); }
+    [data-theme="dark"] .callout-info  { background: rgba(88,166,255,0.07); }
+    [data-theme="dark"] .callout-warn  { background: rgba(210,153,34,0.07); }
+    [data-theme="dark"] .callout-tip   { background: rgba(63,185,80,0.07); }
+    .callout-info  strong { color: var(--accent); }
+    .callout-warn  strong { color: var(--warn); }
+    .callout-tip   strong { color: var(--accent2); }
+
+    /* ── CARDS ── */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 16px 0 24px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .card:hover { border-color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .card-icon { font-size: 22px; margin-bottom: 10px; }
+    .card h4 { font-size: 14px; color: var(--text); text-transform: none; letter-spacing: 0; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: var(--muted); margin: 0; }
+    .card a.go { font-size: 12.5px; font-weight: 600; display: inline-block; margin-top: 8px; }
+
+    /* ── LABEL PILLS ── */
+    .label-pill {
+      display: inline-block;
+      font-size: 12px;
+      font-family: var(--mono);
+      padding: 2px 10px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+    .label-yellow { background: rgba(154,103,0,0.1);  border-color: rgba(154,103,0,0.4);  color: var(--warn); }
+    .label-green  { background: rgba(26,127,55,0.1);  border-color: rgba(26,127,55,0.4);  color: var(--accent2); }
+    .label-red    { background: rgba(209,36,47,0.1);  border-color: rgba(209,36,47,0.4);  color: var(--danger); }
+    .label-blue   { background: rgba(9,105,218,0.1);  border-color: rgba(9,105,218,0.4);  color: var(--accent); }
+    [data-theme="dark"] .label-yellow { background: rgba(210,153,34,0.15);  border-color: rgba(210,153,34,0.4); color: var(--warn); }
+    [data-theme="dark"] .label-green  { background: rgba(63,185,80,0.15);   border-color: rgba(63,185,80,0.4);  color: var(--accent2); }
+    [data-theme="dark"] .label-red    { background: rgba(248,81,73,0.15);   border-color: rgba(248,81,73,0.4);  color: var(--danger); }
+    [data-theme="dark"] .label-blue   { background: rgba(88,166,255,0.15);  border-color: rgba(88,166,255,0.4); color: var(--accent); }
+
+    /* ── STEPS ── */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li { counter-increment: step; display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+    .steps li::before {
+      content: counter(step);
+      background: rgba(9,105,218,0.1);
+      border: 1px solid rgba(9,105,218,0.3);
+      color: var(--accent);
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    [data-theme="dark"] .steps li::before {
+      background: rgba(88,166,255,0.15);
+      border-color: rgba(88,166,255,0.4);
+    }
+    .steps li div { flex: 1; }
+    .steps li strong { display: block; margin-bottom: 4px; }
+
+    /* ── CHANGELOG ── */
+    .cl-entry {
+      border-left: 2px solid var(--border);
+      padding: 0 0 36px 28px;
+      position: relative;
+    }
+    .cl-entry:last-child { padding-bottom: 0; border-left-color: transparent; }
+    .cl-entry::before {
+      content: '';
+      position: absolute;
+      left: -6px; top: 4px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg);
+    }
+    .cl-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+    }
+    .cl-entry h3 { margin: 0 0 12px; font-size: 16px; }
+    .cl-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .cl-feat  { background: rgba(26,127,55,0.12);  color: var(--accent2); border: 1px solid rgba(26,127,55,0.3); }
+    .cl-fix   { background: rgba(9,105,218,0.1);   color: var(--accent);  border: 1px solid rgba(9,105,218,0.3); }
+    [data-theme="dark"] .cl-feat { background: rgba(63,185,80,0.15);  border-color: rgba(63,185,80,0.4); }
+    [data-theme="dark"] .cl-fix  { background: rgba(88,166,255,0.12); border-color: rgba(88,166,255,0.4); }
+    .cl-entry li { margin-bottom: 8px; }
+    .cl-entry li:last-child { margin-bottom: 0; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.2s; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .content { padding: 24px 20px 80px; }
+      .topbar { padding: 10px 16px; }
+      .flow-arrow { display: none; }
+    }
+    .menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+    @media (max-width: 768px) { .menu-btn { display: block; } }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h1>🪞 Obsidian Plugin Mirror</h1>
+    <span>Documentation v1.0</span>
   </div>
-  <div class="links">
-    <a href="https://github.com/khchiang1121/obsidian-plugin-mirror">Source on GitHub</a>
-    <a href="superpowers/specs/2026-07-23-mirror-format-design.md">Shared format spec</a>
-  </div>
-</header>
+  <nav>
+    <div class="nav-group">
+      <div class="nav-group-label">Getting Started</div>
+      <a class="nav-link active" href="#" data-section="overview">
+        <span class="icon">🏠</span> Overview
+      </a>
+      <a class="nav-link" href="#" data-section="quickstart">
+        <span class="icon">🚀</span> Quick Start
+      </a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">How It Works</div>
+      <a class="nav-link" href="#" data-section="architecture">
+        <span class="icon">🏗️</span> Architecture
+      </a>
+      <a class="nav-link" href="#" data-section="format">
+        <span class="icon">🔗</span> Shared Format
+      </a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Reference</div>
+      <a class="nav-link" href="#" data-section="plugins">
+        <span class="icon">📦</span> Tracked Plugins
+      </a>
+      <a class="nav-link" href="#" data-section="limitations">
+        <span class="icon">⚠️</span> Known Limitations
+      </a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Project</div>
+      <a class="nav-link" href="#" data-section="specs">
+        <span class="icon">📖</span> Design Specs
+      </a>
+      <a class="nav-link" href="#" data-section="changelog">
+        <span class="icon">📋</span> Changelog
+      </a>
+    </div>
+    <a class="nav-link" href="https://github.com/khchiang1121/obsidian-plugin-mirror" target="_blank" style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;">
+      GitHub ↗
+    </a>
+  </nav>
+</aside>
 
-<main>
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Toggle menu">☰</button>
+      <span class="topbar-crumb" id="breadcrumb">Docs / <strong>Overview</strong></span>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-badge">installer v1.0.4</span>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">
+        <span class="icon-moon">🌙</span>
+        <span class="icon-sun">☀️</span>
+      </button>
+    </div>
+  </header>
 
-  <section>
-    <div class="sheet-label">Sheet 01<span class="rule"></span>the problem</div>
-    <h2>Same conventions as BRAT, minus the GitHub dependency</h2>
-    <p class="dek">
-      The release-asset layout (<code>manifest.json</code>, <code>main.js</code>,
-      optional <code>styles.css</code> / <code>manifest-beta.json</code>) and the
-      semver-with-fallback version sorting are carried over unchanged from BRAT,
-      so plugin authors need to change nothing. What changes is where the
-      installer looks: an internal mirror instead of <code>api.github.com</code>.
-    </p>
-  </section>
+  <div class="content">
 
-  <section>
-    <div class="sheet-label">Sheet 02<span class="rule"></span>system diagram</div>
-    <h2>Two subsystems, one shared contract</h2>
-    <p class="dek">
-      mirror-builder and the installer plugin never talk to each other — only
-      through a static file format that nginx serves as-is. Either side can be
-      rebuilt independently as long as it honors that format.
-    </p>
-    <div class="schematic">
-      <div class="schematic-row">
-        <div class="schem-box sheet">
-          <h3>mirror-builder</h3>
-          <p>Outside the restricted network. Fetches tracked GitHub repos, writes the static tree.</p>
-        </div>
-        <div class="schem-link">
-          <div class="dashes"></div>
-          index.json<br />versions.json
-        </div>
-        <div class="schem-box sheet">
-          <h3>nginx</h3>
-          <p>Plain static file server. No custom logic — just serves what mirror-builder wrote.</p>
-        </div>
-        <div class="schem-link">
-          <div class="dashes"></div>
-          http only<br />no auth
-        </div>
-        <div class="schem-box sheet">
-          <h3>installer plugin</h3>
-          <p>Inside the restricted network. Browses, installs, updates — never touches GitHub.</p>
+    <!-- ══════════════════════════════════════════════════════════════════
+         OVERVIEW
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section active" id="section-overview">
+      <div class="hero">
+        <h2>Obsidian Plugin Mirror</h2>
+        <p>An internal, GitHub-free replacement for <a href="https://github.com/TfTHacker/obsidian42-brat" target="_blank">BRAT</a>. BRAT installs beta plugins by talking straight to GitHub — on a vault inside a restricted network that can't reach <code>github.com</code>, that's a dead end. This project mirrors plugin releases onto an internally-hosted static server, then browses, installs, and updates them from an Obsidian plugin that only ever talks to that mirror.</p>
+        <div class="hero-chips">
+          <span class="chip chip-blue">TypeScript</span>
+          <span class="chip chip-blue">Docker + nginx</span>
+          <span class="chip chip-green">Obsidian community plugin</span>
+          <span class="chip chip-yellow">Zero GitHub access required inside the vault</span>
         </div>
       </div>
-    </div>
-  </section>
 
-  <section>
-    <div class="sheet-label">Sheet 03<span class="rule"></span>the two subsystems</div>
-    <h2>What each half actually does</h2>
-    <div class="card-grid">
-      <div class="card sheet">
-        <h3>mirror-builder</h3>
-        <p>
-          A one-shot Node.js/TypeScript CLI. Reads a tracked-plugin config,
-          fetches releases via the GitHub API with bounded concurrency and an
-          optional token, sorts and retains versions, and writes a
-          spec-compliant static tree — ready to bake into an nginx image with
-          one npm script. Re-runs only fetch what's new and prune what fell
-          out of retention.
-        </p>
-        <ul class="stack">
-          <li>TypeScript</li>
-          <li>@octokit/rest</li>
-          <li>vitest · 37 tests</li>
+      <h3>Two subsystems, one shared contract</h3>
+      <p>mirror-builder and the installer plugin never talk to each other directly — only through a static file format that nginx serves as-is. Either side can be rebuilt independently as long as it honors that format.</p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-box accent">mirror-builder<br /><small>outside the network, talks to GitHub</small></div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-box">nginx<br /><small>plain static file server</small></div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-box green">installer plugin<br /><small>inside the network, never touches GitHub</small></div>
+        </div>
+      </div>
+
+      <h3>Key features</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔢</div>
+          <h4>Tunable retention</h4>
+          <p><code>defaultRetain</code> keeps the N newest versions; <code>defaultMinStableRetain</code> guarantees a floor of non-prerelease versions so a burst of betas can't crowd stable releases out entirely.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🩹</div>
+          <h4>Self-healing version tracking</h4>
+          <p>The installer re-reads the real on-disk <code>manifest.json</code> as ground truth on every check, so drift from Obsidian's own updater or a manual copy never causes a stale update prompt.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <h4>Adopts externally-installed plugins</h4>
+          <p>A plugin installed via Obsidian's built-in browser, BRAT, or a manual copy is detected and folded into update checks automatically — no separate "import" step.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧪</div>
+          <h4>Per-plugin prerelease opt-in</h4>
+          <p>Each tracked plugin independently toggles whether prerelease versions count as an available update.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📴</div>
+          <h4>Zero GitHub dependency inside the vault</h4>
+          <p>The installer plugin only ever calls the internal mirror's HTTP endpoints — <code>index.json</code> and <code>versions.json</code> — never <code>api.github.com</code>.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">♻️</div>
+          <h4>Incremental rebuilds</h4>
+          <p>Re-running mirror-builder only fetches what changed and prunes whatever fell out of retention — it never re-downloads everything from scratch.</p>
+        </div>
+      </div>
+
+      <h3>Non-goals</h3>
+      <ul>
+        <li>File integrity checks (checksums/signatures) — noted in the format spec as a future addition, not yet implemented</li>
+        <li>Access control or TLS on the mirror itself — assumed to run on a trusted internal network; an nginx config concern, orthogonal to the file format</li>
+        <li>Submitting to Obsidian's official Community Plugins directory — this project exists specifically to work <em>without</em> GitHub access, which the official directory requires</li>
+      </ul>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         QUICK START
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-quickstart">
+      <h2>Quick Start</h2>
+      <p>Build the mirror outside the restricted network, then install the vault plugin inside it.</p>
+
+      <h3>Prerequisites</h3>
+      <ul>
+        <li>Node.js + npm</li>
+        <li>Docker, to bake the mirror into an nginx image</li>
+        <li>Optionally a <code>GITHUB_TOKEN</code> — raises the GitHub API rate limit from 60 to 5000 requests/hour</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <ol class="steps">
+        <li>
+          <div>
+            <strong>Configure and build the mirror</strong>
+            <pre><div class="lang-tag">mirror-builder/</div><code>npm install
+cp tracked-plugins.example.json tracked-plugins.json   <span class="cmt"># edit with real owner/repo entries</span>
+<span class="kw">export</span> GITHUB_TOKEN=ghp_xxx                             <span class="cmt"># optional, raises the rate limit</span>
+npm run build:image                                      <span class="cmt"># fetch releases, then docker build</span></code></pre>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Run it on the internal network</strong>
+            <pre><div class="lang-tag">shell</div><code>docker run -d --name plugin-mirror -p 8080:80 obsidian-plugin-mirror</code></pre>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Build the installer plugin</strong>
+            <pre><div class="lang-tag">obsidian-installer-plugin/</div><code>npm install
+npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main.js</span></code></pre>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Install the vault plugin</strong>
+            <p>Copy <code>manifest.json</code>, <code>main.js</code>, and <code>versions.json</code> into <code>&lt;vault&gt;/.obsidian/plugins/obsidian-mirror-installer/</code>, then enable it from Community Plugins.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Point it at your mirror</strong>
+            <p>Open the plugin's settings tab and set <strong>Mirror base URL</strong> to your mirror's address, e.g. <code>http://plugin-mirror.internal:8080/</code>.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="callout callout-tip">
+        <p><strong>Tip:</strong> Opening the settings tab always runs a fresh update check first — including adopting any plugin already installed by other means — so what you see is current, not stale.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         ARCHITECTURE
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-architecture">
+      <h2>Architecture</h2>
+
+      <h3>Directory structure</h3>
+      <pre><div class="lang-tag">tree</div><code>obsidian-plugin-mirror/
+├── mirror-builder/              <span class="cmt"># CLI — fetches releases, writes the static tree</span>
+│   ├── src/
+│   │   ├── cli.ts                 <span class="cmt"># pipeline entrypoint</span>
+│   │   ├── config.ts              <span class="cmt"># tracked-plugins.json parsing/validation</span>
+│   │   ├── github.ts              <span class="cmt"># @octokit/rest release fetching</span>
+│   │   ├── versionSort.ts         <span class="cmt"># newest-first sort + retention (incl. minStableRetain floor)</span>
+│   │   ├── assets.ts              <span class="cmt"># download + prune stale version directories</span>
+│   │   ├── manifestReader.ts      <span class="cmt"># id/name/author/description extraction</span>
+│   │   └── writer.ts              <span class="cmt"># index.json / versions.json output</span>
+│   └── tracked-plugins.json     <span class="cmt"># the 113-plugin config this site's table reflects</span>
+└── obsidian-installer-plugin/   <span class="cmt"># the vault-side Obsidian plugin</span>
+    └── src/
+        ├── main.ts                <span class="cmt"># plugin entrypoint, startup update check</span>
+        ├── registry.ts            <span class="cmt"># index.json / versions.json fetching</span>
+        ├── installer.ts           <span class="cmt"># install/remove + adoptUntrackedInstalledPlugins</span>
+        ├── updater.ts             <span class="cmt"># checkForUpdates</span>
+        ├── versionCompare.ts      <span class="cmt"># semver-with-fallback candidate selection</span>
+        └── settingsTab.ts         <span class="cmt"># Installed / Available UI</span></code></pre>
+
+      <h3>mirror-builder pipeline</h3>
+      <ol class="steps">
+        <li><div><strong>Load &amp; validate config</strong><p>A missing file, invalid JSON, or an empty <code>plugins</code> array is the only fatal error path — it exits non-zero and writes nothing.</p></div></li>
+        <li><div><strong>Fetch releases per repo</strong><p>Bounded concurrency via octokit. A failed fetch for one repo is logged as a warning and skipped — never fatal to the run.</p></div></li>
+        <li><div><strong>Per-repo processing</strong><p>Validate required assets, sort newest-first, apply <code>retain</code> and the <code>minStableRetain</code> floor, then download and prune version directories.</p></div></li>
+        <li><div><strong>Write output</strong><p><code>index.json</code> covering every plugin that produced at least one valid version, plus a <code>versions.json</code> per plugin.</p></div></li>
+      </ol>
+
+      <h3>Installer update-check lifecycle</h3>
+      <ol class="steps">
+        <li><div><strong>Fetch the registry index</strong><p>Runs on startup (if enabled), on the "Check for updates now" button, and whenever the settings tab opens.</p></div></li>
+        <li><div><strong>Adopt untracked installed plugins</strong><p>Any registry entry with a matching <code>.obsidian/plugins/&lt;id&gt;/manifest.json</code> on disk that isn't already tracked gets folded in, using the real on-disk version as ground truth.</p></div></li>
+        <li><div><strong>Per-plugin version check</strong><p>Compares the installed version against the newest eligible version (respecting each plugin's prerelease opt-in).</p></div></li>
+        <li><div><strong>Optionally auto-install</strong><p>If "Install updates automatically" is on, eligible updates are downloaded and applied immediately.</p></div></li>
+        <li><div><strong>Persist settings</strong><p>Saved unconditionally — this is also where a self-healed stale version or a newly-adopted plugin gets written to disk.</p></div></li>
+      </ol>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SHARED FORMAT
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-format">
+      <h2>Shared Format</h2>
+      <p>The only contract between mirror-builder and the installer plugin — two JSON files nginx serves as plain static content, no custom server logic involved.</p>
+
+      <h3>index.json</h3>
+      <p>One entry per plugin that has at least one valid mirrored version.</p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td><code>id</code> / <code>name</code></td><td>From the plugin's own <code>manifest.json</code></td></tr>
+            <tr><td><code>author</code></td><td>From <code>manifest.json</code>; falls back to the GitHub repo owner if the manifest omits it</td></tr>
+            <tr><td><code>description</code></td><td>From <code>manifest.json</code></td></tr>
+            <tr><td><code>repo</code></td><td><code>owner/name</code> — the tracked GitHub repo</td></tr>
+            <tr><td><code>latestVersion</code></td><td>Newest retained non-prerelease version, or <code>null</code></td></tr>
+            <tr><td><code>latestPrerelease</code></td><td>Newest retained prerelease version, or <code>null</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>versions.json</h3>
+      <p>One per plugin, at <code>plugins/&lt;owner&gt;/&lt;repo&gt;/versions.json</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td><code>repo</code> / <code>latest</code></td><td>Repo string and the newest non-prerelease version</td></tr>
+            <tr><td><code>versions[]</code></td><td>Every retained version — <code>version</code>, <code>prerelease</code>, <code>publishedAt</code>, <code>files</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-info">
+        <p><strong>Note:</strong> Checksums/signatures aren't part of the format yet, but the <code>versions[]</code> entry shape has room for them without a breaking change — see the full spec for details.</p>
+      </div>
+
+      <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md">→ Read the full format spec</a>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TRACKED PLUGINS
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-plugins">
+      <h2>Tracked Plugins</h2>
+      <p>Every repo in <code>mirror-builder/tracked-plugins.json</code> — the source of truth is that file; this table is a generated, human-readable view of it. <strong>208 plugins tracked.</strong></p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Plugin</th><th>Author</th><th>Repo</th></tr>
+          </thead>
+          <tbody>
+              <tr><td>Actions URI</td><td>Carlo Zottmann</td><td><code><a href="https://github.com/czottmann/obsidian-actions-uri" target="_blank">czottmann/obsidian-actions-uri</a></code></td></tr>
+              <tr><td>Admonition</td><td>valentine195</td><td><code><a href="https://github.com/valentine195/obsidian-admonition" target="_blank">valentine195/obsidian-admonition</a></code></td></tr>
+              <tr><td>Advanced Canvas</td><td>mika-dev</td><td><code><a href="https://github.com/developer-mike/obsidian-advanced-canvas" target="_blank">developer-mike/obsidian-advanced-canvas</a></code></td></tr>
+              <tr><td>Advanced Slides</td><td>mszturc</td><td><code><a href="https://github.com/mszturc/obsidian-advanced-slides" target="_blank">mszturc/obsidian-advanced-slides</a></code></td></tr>
+              <tr><td>Advanced Tables</td><td>tgrosinger</td><td><code><a href="https://github.com/tgrosinger/advanced-tables-obsidian" target="_blank">tgrosinger/advanced-tables-obsidian</a></code></td></tr>
+              <tr><td>Advanced URI</td><td>Vinzent</td><td><code><a href="https://github.com/vinzent03/obsidian-advanced-uri" target="_blank">vinzent03/obsidian-advanced-uri</a></code></td></tr>
+              <tr><td>Agent Client</td><td>rait-09</td><td><code><a href="https://github.com/rait-09/obsidian-agent-client" target="_blank">rait-09/obsidian-agent-client</a></code></td></tr>
+              <tr><td>Alx Folder Note</td><td>aidenlx</td><td><code><a href="https://github.com/aidenlx/alx-folder-note" target="_blank">aidenlx/alx-folder-note</a></code></td></tr>
+              <tr><td>Annotator</td><td>elias-sundqvist</td><td><code><a href="https://github.com/elias-sundqvist/obsidian-annotator" target="_blank">elias-sundqvist/obsidian-annotator</a></code></td></tr>
+              <tr><td>Another Quick Switcher</td><td>tadashi-aikawa</td><td><code><a href="https://github.com/tadashi-aikawa/obsidian-another-quick-switcher" target="_blank">tadashi-aikawa/obsidian-another-quick-switcher</a></code></td></tr>
+              <tr><td>Auto Link Title</td><td>zolrath</td><td><code><a href="https://github.com/zolrath/obsidian-auto-link-title" target="_blank">zolrath/obsidian-auto-link-title</a></code></td></tr>
+              <tr><td>Auto Note Mover</td><td>farux</td><td><code><a href="https://github.com/farux/obsidian-auto-note-mover" target="_blank">farux/obsidian-auto-note-mover</a></code></td></tr>
+              <tr><td>Automatic Table Of Contents</td><td>johansatge</td><td><code><a href="https://github.com/johansatge/obsidian-automatic-table-of-contents" target="_blank">johansatge/obsidian-automatic-table-of-contents</a></code></td></tr>
+              <tr><td>Banners</td><td>noatpad</td><td><code><a href="https://github.com/noatpad/obsidian-banners" target="_blank">noatpad/obsidian-banners</a></code></td></tr>
+              <tr><td>Better Export PDF</td><td>l1xnan</td><td><code><a href="https://github.com/l1xnan/obsidian-better-export-pdf" target="_blank">l1xnan/obsidian-better-export-pdf</a></code></td></tr>
+              <tr><td>Better Word Count</td><td>lukeleppan</td><td><code><a href="https://github.com/lukeleppan/better-word-count" target="_blank">lukeleppan/better-word-count</a></code></td></tr>
+              <tr><td>Book Search</td><td>anpigon</td><td><code><a href="https://github.com/anpigon/obsidian-book-search-plugin" target="_blank">anpigon/obsidian-book-search-plugin</a></code></td></tr>
+              <tr><td>BRAT</td><td>tfthacker</td><td><code><a href="https://github.com/TfTHacker/obsidian42-brat" target="_blank">TfTHacker/obsidian42-brat</a></code></td></tr>
+              <tr><td>Breadcrumbs</td><td>Michael Porter</td><td><code><a href="https://github.com/michaelpporter/breadcrumbs" target="_blank">michaelpporter/breadcrumbs</a></code></td></tr>
+              <tr><td>Buttons</td><td>shabegom</td><td><code><a href="https://github.com/shabegom/buttons" target="_blank">shabegom/buttons</a></code></td></tr>
+              <tr><td>Calendar</td><td>Liam Cain</td><td><code><a href="https://github.com/liamcain/obsidian-calendar-plugin" target="_blank">liamcain/obsidian-calendar-plugin</a></code></td></tr>
+              <tr><td>Calendar Bases</td><td>edrickleong</td><td><code><a href="https://github.com/edrickleong/obsidian-calendar-bases" target="_blank">edrickleong/obsidian-calendar-bases</a></code></td></tr>
+              <tr><td>Calendarium</td><td>javalent</td><td><code><a href="https://github.com/javalent/calendarium" target="_blank">javalent/calendarium</a></code></td></tr>
+              <tr><td>Callout Manager</td><td>eth-p</td><td><code><a href="https://github.com/eth-p/obsidian-callout-manager" target="_blank">eth-p/obsidian-callout-manager</a></code></td></tr>
+              <tr><td>Canvas Mindmap</td><td>quorafind</td><td><code><a href="https://github.com/quorafind/Obsidian-Canvas-MindMap" target="_blank">quorafind/Obsidian-Canvas-MindMap</a></code></td></tr>
+              <tr><td>CardBoard</td><td>roovo</td><td><code><a href="https://github.com/roovo/obsidian-card-board" target="_blank">roovo/obsidian-card-board</a></code></td></tr>
+              <tr><td>Charts</td><td>phibr0</td><td><code><a href="https://github.com/phibr0/obsidian-charts" target="_blank">phibr0/obsidian-charts</a></code></td></tr>
+              <tr><td>Charts View</td><td>caronchen</td><td><code><a href="https://github.com/caronchen/obsidian-chartsview-plugin" target="_blank">caronchen/obsidian-chartsview-plugin</a></code></td></tr>
+              <tr><td>ChatGPT MD</td><td>bramses</td><td><code><a href="https://github.com/bramses/chatgpt-md" target="_blank">bramses/chatgpt-md</a></code></td></tr>
+              <tr><td>Checklist</td><td>delashum</td><td><code><a href="https://github.com/delashum/obsidian-checklist-plugin" target="_blank">delashum/obsidian-checklist-plugin</a></code></td></tr>
+              <tr><td>Citations</td><td>hans</td><td><code><a href="https://github.com/hans/obsidian-citation-plugin" target="_blank">hans/obsidian-citation-plugin</a></code></td></tr>
+              <tr><td>Claudian</td><td>Yishen Tu</td><td><code><a href="https://github.com/yishentu/claudian" target="_blank">yishentu/claudian</a></code></td></tr>
+              <tr><td>Clear Unused Images</td><td>ozntel</td><td><code><a href="https://github.com/ozntel/oz-clear-unused-images-obsidian" target="_blank">ozntel/oz-clear-unused-images-obsidian</a></code></td></tr>
+              <tr><td>Cm Editor Syntax Highlight Obsidian</td><td>deathau</td><td><code><a href="https://github.com/deathau/cm-editor-syntax-highlight-obsidian" target="_blank">deathau/cm-editor-syntax-highlight-obsidian</a></code></td></tr>
+              <tr><td>cMenu</td><td>chetachiezikeuzor</td><td><code><a href="https://github.com/chetachiezikeuzor/cMenu-Plugin" target="_blank">chetachiezikeuzor/cMenu-Plugin</a></code></td></tr>
+              <tr><td>Code Styler</td><td>mayurankv</td><td><code><a href="https://github.com/mayurankv/Obsidian-Code-Styler" target="_blank">mayurankv/Obsidian-Code-Styler</a></code></td></tr>
+              <tr><td>Colored Tags</td><td>pfrankov</td><td><code><a href="https://github.com/pfrankov/obsidian-colored-tags" target="_blank">pfrankov/obsidian-colored-tags</a></code></td></tr>
+              <tr><td>Colored Text</td><td>erincayaz</td><td><code><a href="https://github.com/erincayaz/obsidian-colored-text" target="_blank">erincayaz/obsidian-colored-text</a></code></td></tr>
+              <tr><td>Columns</td><td>tnichols217</td><td><code><a href="https://github.com/tnichols217/obsidian-columns" target="_blank">tnichols217/obsidian-columns</a></code></td></tr>
+              <tr><td>Commander</td><td>phibr0</td><td><code><a href="https://github.com/phibr0/obsidian-commander" target="_blank">phibr0/obsidian-commander</a></code></td></tr>
+              <tr><td>Consistent Attachments and Links</td><td>dy-sh</td><td><code><a href="https://github.com/dy-sh/obsidian-consistent-attachments-and-links" target="_blank">dy-sh/obsidian-consistent-attachments-and-links</a></code></td></tr>
+              <tr><td>Contextual Typography</td><td>mgmeyers</td><td><code><a href="https://github.com/mgmeyers/obsidian-contextual-typography" target="_blank">mgmeyers/obsidian-contextual-typography</a></code></td></tr>
+              <tr><td>Convert url to preview (iframe)</td><td>fhachez</td><td><code><a href="https://github.com/fhachez/obsidian-convert-url-to-iframe" target="_blank">fhachez/obsidian-convert-url-to-iframe</a></code></td></tr>
+              <tr><td>Copilot</td><td>Logan Yang</td><td><code><a href="https://github.com/logancyang/obsidian-copilot" target="_blank">logancyang/obsidian-copilot</a></code></td></tr>
+              <tr><td>Custom Attachment Location</td><td>RainCat1998</td><td><code><a href="https://github.com/RainCat1998/obsidian-custom-attachment-location" target="_blank">RainCat1998/obsidian-custom-attachment-location</a></code></td></tr>
+              <tr><td>Custom File Explorer sorting</td><td>sebastianmc</td><td><code><a href="https://github.com/sebastianmc/obsidian-custom-sort" target="_blank">sebastianmc/obsidian-custom-sort</a></code></td></tr>
+              <tr><td>Custom Frames</td><td>Ell</td><td><code><a href="https://github.com/ellpeck/ObsidianCustomFrames" target="_blank">ellpeck/ObsidianCustomFrames</a></code></td></tr>
+              <tr><td>Datacore</td><td>blacksmithgu</td><td><code><a href="https://github.com/blacksmithgu/datacore" target="_blank">blacksmithgu/datacore</a></code></td></tr>
+              <tr><td>Dataview</td><td>blacksmithgu</td><td><code><a href="https://github.com/blacksmithgu/obsidian-dataview" target="_blank">blacksmithgu/obsidian-dataview</a></code></td></tr>
+              <tr><td>Day Planner</td><td>ivan-lednev</td><td><code><a href="https://github.com/ivan-lednev/obsidian-day-planner" target="_blank">ivan-lednev/obsidian-day-planner</a></code></td></tr>
+              <tr><td>Diagrams</td><td>zapthedingbat</td><td><code><a href="https://github.com/zapthedingbat/drawio-obsidian" target="_blank">zapthedingbat/drawio-obsidian</a></code></td></tr>
+              <tr><td>Dice Roller</td><td>obsidian-ttrpg-community</td><td><code><a href="https://github.com/obsidian-ttrpg-community/dice-roller" target="_blank">obsidian-ttrpg-community/dice-roller</a></code></td></tr>
+              <tr><td>Dictionary</td><td>phibr0</td><td><code><a href="https://github.com/phibr0/obsidian-dictionary" target="_blank">phibr0/obsidian-dictionary</a></code></td></tr>
+              <tr><td>Docxer</td><td>mika-dev</td><td><code><a href="https://github.com/developer-mike/obsidian-docxer" target="_blank">developer-mike/obsidian-docxer</a></code></td></tr>
+              <tr><td>Easy Typing</td><td>yaozhuwa</td><td><code><a href="https://github.com/Yaozhuwa/easy-typing-obsidian" target="_blank">Yaozhuwa/easy-typing-obsidian</a></code></td></tr>
+              <tr><td>Editing Toolbar</td><td>pkm-er</td><td><code><a href="https://github.com/pkm-er/obsidian-editing-toolbar" target="_blank">pkm-er/obsidian-editing-toolbar</a></code></td></tr>
+              <tr><td>Emoji Shortcodes</td><td>phibr0</td><td><code><a href="https://github.com/phibr0/obsidian-emoji-shortcodes" target="_blank">phibr0/obsidian-emoji-shortcodes</a></code></td></tr>
+              <tr><td>Emoji Toolbar</td><td>oliveryh</td><td><code><a href="https://github.com/oliveryh/obsidian-emoji-toolbar" target="_blank">oliveryh/obsidian-emoji-toolbar</a></code></td></tr>
+              <tr><td>Enhancing Export</td><td>mokeyish</td><td><code><a href="https://github.com/mokeyish/obsidian-enhancing-export" target="_blank">mokeyish/obsidian-enhancing-export</a></code></td></tr>
+              <tr><td>Enhancing Mindmap</td><td>markmindckm</td><td><code><a href="https://github.com/markmindckm/obsidian-enhancing-mindmap" target="_blank">markmindckm/obsidian-enhancing-mindmap</a></code></td></tr>
+              <tr><td>ExcaliBrain</td><td>zsviczian</td><td><code><a href="https://github.com/zsviczian/excalibrain" target="_blank">zsviczian/excalibrain</a></code></td></tr>
+              <tr><td>Excalidraw</td><td>zsviczian</td><td><code><a href="https://github.com/zsviczian/obsidian-excalidraw-plugin" target="_blank">zsviczian/obsidian-excalidraw-plugin</a></code></td></tr>
+              <tr><td>Excel to Markdown Table</td><td>ganesshkumar</td><td><code><a href="https://github.com/ganesshkumar/obsidian-excel-to-markdown-table" target="_blank">ganesshkumar/obsidian-excel-to-markdown-table</a></code></td></tr>
+              <tr><td>Execute Code</td><td>twibiral</td><td><code><a href="https://github.com/twibiral/obsidian-execute-code" target="_blank">twibiral/obsidian-execute-code</a></code></td></tr>
+              <tr><td>Fantasy Statblocks</td><td>obsidian-ttrpg-community</td><td><code><a href="https://github.com/obsidian-ttrpg-community/fantasy-statblocks" target="_blank">obsidian-ttrpg-community/fantasy-statblocks</a></code></td></tr>
+              <tr><td>File Color</td><td>ecustic</td><td><code><a href="https://github.com/ecustic/obsidian-file-color" target="_blank">ecustic/obsidian-file-color</a></code></td></tr>
+              <tr><td>File Explorer Note Count</td><td>ozntel</td><td><code><a href="https://github.com/ozntel/file-explorer-note-count" target="_blank">ozntel/file-explorer-note-count</a></code></td></tr>
+              <tr><td>File Explorer++</td><td>kelszo</td><td><code><a href="https://github.com/kelszo/obsidian-file-explorer-plus" target="_blank">kelszo/obsidian-file-explorer-plus</a></code></td></tr>
+              <tr><td>File Tree Alternative</td><td>ozntel</td><td><code><a href="https://github.com/ozntel/file-tree-alternative" target="_blank">ozntel/file-tree-alternative</a></code></td></tr>
+              <tr><td>Find orphaned files and broken links</td><td>Vinzent</td><td><code><a href="https://github.com/Vinzent03/find-unlinked-files" target="_blank">Vinzent03/find-unlinked-files</a></code></td></tr>
+              <tr><td>floating toc</td><td>pkm-er</td><td><code><a href="https://github.com/pkm-er/obsidian-floating-toc-plugin" target="_blank">pkm-er/obsidian-floating-toc-plugin</a></code></td></tr>
+              <tr><td>Folder Note</td><td>xpgo</td><td><code><a href="https://github.com/xpgo/obsidian-folder-note-plugin" target="_blank">xpgo/obsidian-folder-note-plugin</a></code></td></tr>
+              <tr><td>Folder notes</td><td>lostpaul</td><td><code><a href="https://github.com/lostpaul/obsidian-folder-notes" target="_blank">lostpaul/obsidian-folder-notes</a></code></td></tr>
+              <tr><td>Footnotes</td><td>akaalias</td><td><code><a href="https://github.com/akaalias/obsidian-footnotes" target="_blank">akaalias/obsidian-footnotes</a></code></td></tr>
+              <tr><td>Full Calendar</td><td>obsidian-community</td><td><code><a href="https://github.com/obsidian-community/obsidian-full-calendar" target="_blank">obsidian-community/obsidian-full-calendar</a></code></td></tr>
+              <tr><td>Git</td><td>denolehov</td><td><code><a href="https://github.com/denolehov/obsidian-git" target="_blank">denolehov/obsidian-git</a></code></td></tr>
+              <tr><td>Google Calendar</td><td>yukigasai</td><td><code><a href="https://github.com/yukigasai/obsidian-google-calendar" target="_blank">yukigasai/obsidian-google-calendar</a></code></td></tr>
+              <tr><td>Google Drive Sync</td><td>richardx366</td><td><code><a href="https://github.com/richardx366/Obsidian-Google-Drive" target="_blank">richardx366/Obsidian-Google-Drive</a></code></td></tr>
+              <tr><td>Harper</td><td>automattic</td><td><code><a href="https://github.com/automattic/harper-obsidian-plugin" target="_blank">automattic/harper-obsidian-plugin</a></code></td></tr>
+              <tr><td>Heatmap Calendar</td><td>richardsl</td><td><code><a href="https://github.com/richardsl/heatmap-calendar-obsidian" target="_blank">richardsl/heatmap-calendar-obsidian</a></code></td></tr>
+              <tr><td>Hider</td><td>kepano</td><td><code><a href="https://github.com/kepano/obsidian-hider" target="_blank">kepano/obsidian-hider</a></code></td></tr>
+              <tr><td>Highlightr</td><td>chetachiezikeuzor</td><td><code><a href="https://github.com/chetachiezikeuzor/Highlightr-Plugin" target="_blank">chetachiezikeuzor/Highlightr-Plugin</a></code></td></tr>
+              <tr><td>Homepage</td><td>mirnovov</td><td><code><a href="https://github.com/mirnovov/obsidian-homepage" target="_blank">mirnovov/obsidian-homepage</a></code></td></tr>
+              <tr><td>Hotkeys++</td><td>argenos</td><td><code><a href="https://github.com/argenos/hotkeysplus-obsidian" target="_blank">argenos/hotkeysplus-obsidian</a></code></td></tr>
+              <tr><td>Hover Editor</td><td>nothingislost</td><td><code><a href="https://github.com/nothingislost/obsidian-hover-editor" target="_blank">nothingislost/obsidian-hover-editor</a></code></td></tr>
+              <tr><td>Iconic</td><td>Holo</td><td><code><a href="https://github.com/gfxholo/iconic" target="_blank">gfxholo/iconic</a></code></td></tr>
+              <tr><td>Iconize</td><td>florianwoelki</td><td><code><a href="https://github.com/florianwoelki/obsidian-iconize" target="_blank">florianwoelki/obsidian-iconize</a></code></td></tr>
+              <tr><td>Icons</td><td>visini</td><td><code><a href="https://github.com/visini/obsidian-icons-plugin" target="_blank">visini/obsidian-icons-plugin</a></code></td></tr>
+              <tr><td>Image auto upload</td><td>renmu123</td><td><code><a href="https://github.com/renmu123/obsidian-image-auto-upload-plugin" target="_blank">renmu123/obsidian-image-auto-upload-plugin</a></code></td></tr>
+              <tr><td>Image Converter</td><td>xryul</td><td><code><a href="https://github.com/xryul/obsidian-image-converter" target="_blank">xryul/obsidian-image-converter</a></code></td></tr>
+              <tr><td>Image in Editor</td><td>ozntel</td><td><code><a href="https://github.com/ozntel/oz-image-in-editor-obsidian" target="_blank">ozntel/oz-image-in-editor-obsidian</a></code></td></tr>
+              <tr><td>Image Toolkit</td><td>obsidian-community</td><td><code><a href="https://github.com/obsidian-community/obsidian-image-toolkit" target="_blank">obsidian-community/obsidian-image-toolkit</a></code></td></tr>
+              <tr><td>Imgur</td><td>gavvvr</td><td><code><a href="https://github.com/gavvvr/obsidian-imgur-plugin" target="_blank">gavvvr/obsidian-imgur-plugin</a></code></td></tr>
+              <tr><td>Importer</td><td>Obsidian</td><td><code><a href="https://github.com/obsidianmd/obsidian-importer" target="_blank">obsidianmd/obsidian-importer</a></code></td></tr>
+              <tr><td>Initiative Tracker</td><td>obsidian-ttrpg-community</td><td><code><a href="https://github.com/obsidian-ttrpg-community/initiative-tracker" target="_blank">obsidian-ttrpg-community/initiative-tracker</a></code></td></tr>
+              <tr><td>Ink</td><td>Dale de Silva</td><td><code><a href="https://github.com/daledesilva/obsidian_ink" target="_blank">daledesilva/obsidian_ink</a></code></td></tr>
+              <tr><td>Journals</td><td>srg-kostyrko</td><td><code><a href="https://github.com/srg-kostyrko/obsidian-journal" target="_blank">srg-kostyrko/obsidian-journal</a></code></td></tr>
+              <tr><td>Juggl</td><td>hemile</td><td><code><a href="https://github.com/hemile/juggl" target="_blank">hemile/juggl</a></code></td></tr>
+              <tr><td>Kanban</td><td>mgmeyers</td><td><code><a href="https://github.com/mgmeyers/obsidian-kanban" target="_blank">mgmeyers/obsidian-kanban</a></code></td></tr>
+              <tr><td>Kindle Highlights</td><td>hadynz</td><td><code><a href="https://github.com/hadynz/obsidian-kindle-plugin" target="_blank">hadynz/obsidian-kindle-plugin</a></code></td></tr>
+              <tr><td>LanguageTool Integration</td><td>clemens-e</td><td><code><a href="https://github.com/clemens-e/obsidian-languagetool-plugin" target="_blank">clemens-e/obsidian-languagetool-plugin</a></code></td></tr>
+              <tr><td>Latex Suite</td><td>artisticat</td><td><code><a href="https://github.com/artisticat1/obsidian-latex-suite" target="_blank">artisticat1/obsidian-latex-suite</a></code></td></tr>
+              <tr><td>Lazy Loader</td><td>Alan Grainger</td><td><code><a href="https://github.com/alangrainger/obsidian-lazy-plugins" target="_blank">alangrainger/obsidian-lazy-plugins</a></code></td></tr>
+              <tr><td>Leaflet</td><td>javalent</td><td><code><a href="https://github.com/javalent/obsidian-leaflet" target="_blank">javalent/obsidian-leaflet</a></code></td></tr>
+              <tr><td>Link Embed</td><td>seraphli</td><td><code><a href="https://github.com/seraphli/obsidian-link-embed" target="_blank">seraphli/obsidian-link-embed</a></code></td></tr>
+              <tr><td>Linter</td><td>platers</td><td><code><a href="https://github.com/platers/obsidian-linter" target="_blank">platers/obsidian-linter</a></code></td></tr>
+              <tr><td>List Callouts</td><td>mgmeyers</td><td><code><a href="https://github.com/mgmeyers/obsidian-list-callouts" target="_blank">mgmeyers/obsidian-list-callouts</a></code></td></tr>
+              <tr><td>Local GPT</td><td>pfrankov</td><td><code><a href="https://github.com/pfrankov/obsidian-local-gpt" target="_blank">pfrankov/obsidian-local-gpt</a></code></td></tr>
+              <tr><td>Local Images Plus</td><td>sergei-korneev</td><td><code><a href="https://github.com/sergei-korneev/obsidian-local-images-plus" target="_blank">sergei-korneev/obsidian-local-images-plus</a></code></td></tr>
+              <tr><td>Local REST API with MCP</td><td>Adam Coddington</td><td><code><a href="https://github.com/coddingtonbear/obsidian-local-rest-api" target="_blank">coddingtonbear/obsidian-local-rest-api</a></code></td></tr>
+              <tr><td>Longform</td><td>kevboh</td><td><code><a href="https://github.com/kevboh/longform" target="_blank">kevboh/longform</a></code></td></tr>
+              <tr><td>make.md</td><td>make-md</td><td><code><a href="https://github.com/make-md/makemd" target="_blank">make-md/makemd</a></code></td></tr>
+              <tr><td>Map View</td><td>esm7</td><td><code><a href="https://github.com/esm7/obsidian-map-view" target="_blank">esm7/obsidian-map-view</a></code></td></tr>
+              <tr><td>Markdown Formatting Assistant</td><td>reocin</td><td><code><a href="https://github.com/reocin/obsidian-markdown-formatting-assistant-plugin" target="_blank">reocin/obsidian-markdown-formatting-assistant-plugin</a></code></td></tr>
+              <tr><td>Markdown Table Editor</td><td>ganesshkumar</td><td><code><a href="https://github.com/ganesshkumar/obsidian-table-editor" target="_blank">ganesshkumar/obsidian-table-editor</a></code></td></tr>
+              <tr><td>Markmind</td><td>markmindckm</td><td><code><a href="https://github.com/markmindckm/obsidian-markmind" target="_blank">markmindckm/obsidian-markmind</a></code></td></tr>
+              <tr><td>Media Extended</td><td>aidenlx</td><td><code><a href="https://github.com/aidenlx/media-extended" target="_blank">aidenlx/media-extended</a></code></td></tr>
+              <tr><td>Meld Encrypt</td><td>meld-cp</td><td><code><a href="https://github.com/meld-cp/obsidian-encrypt" target="_blank">meld-cp/obsidian-encrypt</a></code></td></tr>
+              <tr><td>Memos</td><td>Quorafind</td><td><code><a href="https://github.com/Quorafind/Obsidian-Memos" target="_blank">Quorafind/Obsidian-Memos</a></code></td></tr>
+              <tr><td>Mermaid Tools</td><td>Daniel Nikolaev</td><td><code><a href="https://github.com/dartungar/obsidian-mermaid" target="_blank">dartungar/obsidian-mermaid</a></code></td></tr>
+              <tr><td>Meta Bind</td><td>Moritz Jung</td><td><code><a href="https://github.com/mprojectscode/obsidian-meta-bind-plugin" target="_blank">mprojectscode/obsidian-meta-bind-plugin</a></code></td></tr>
+              <tr><td>Metadata Menu</td><td>mdelobelle</td><td><code><a href="https://github.com/mdelobelle/metadatamenu" target="_blank">mdelobelle/metadatamenu</a></code></td></tr>
+              <tr><td>MetaEdit</td><td>chhoumann</td><td><code><a href="https://github.com/chhoumann/MetaEdit" target="_blank">chhoumann/MetaEdit</a></code></td></tr>
+              <tr><td>Mind Map</td><td>lynchjames</td><td><code><a href="https://github.com/lynchjames/obsidian-mind-map" target="_blank">lynchjames/obsidian-mind-map</a></code></td></tr>
+              <tr><td>Mindmap NextGen</td><td>james-tindal</td><td><code><a href="https://github.com/james-tindal/obsidian-mindmap-nextgen" target="_blank">james-tindal/obsidian-mindmap-nextgen</a></code></td></tr>
+              <tr><td>Minimal Theme Settings</td><td>kepano</td><td><code><a href="https://github.com/kepano/obsidian-minimal-settings" target="_blank">kepano/obsidian-minimal-settings</a></code></td></tr>
+              <tr><td>Mousewheel Image zoom</td><td>nicojeske</td><td><code><a href="https://github.com/nicojeske/mousewheel-image-zoom" target="_blank">nicojeske/mousewheel-image-zoom</a></code></td></tr>
+              <tr><td>Multi Properties</td><td>technohiker</td><td><code><a href="https://github.com/technohiker/obsidian-multi-properties" target="_blank">technohiker/obsidian-multi-properties</a></code></td></tr>
+              <tr><td>Multi-Column Markdown</td><td>ckrobinson</td><td><code><a href="https://github.com/ckrobinson/multi-column-markdown" target="_blank">ckrobinson/multi-column-markdown</a></code></td></tr>
+              <tr><td>Note Refactor</td><td>lynchjames</td><td><code><a href="https://github.com/lynchjames/note-refactor-obsidian" target="_blank">lynchjames/note-refactor-obsidian</a></code></td></tr>
+              <tr><td>Note Toolbar</td><td>chrisgurney</td><td><code><a href="https://github.com/chrisgurney/obsidian-note-toolbar" target="_blank">chrisgurney/obsidian-note-toolbar</a></code></td></tr>
+              <tr><td>Notebook Navigator</td><td>Johan Sanneblad</td><td><code><a href="https://github.com/johansan/notebook-navigator" target="_blank">johansan/notebook-navigator</a></code></td></tr>
+              <tr><td>Novel word count</td><td>isaaclyman</td><td><code><a href="https://github.com/isaaclyman/novel-word-count-obsidian" target="_blank">isaaclyman/novel-word-count-obsidian</a></code></td></tr>
+              <tr><td>Number Headings</td><td>onlyafly</td><td><code><a href="https://github.com/onlyafly/number-headings-obsidian" target="_blank">onlyafly/number-headings-obsidian</a></code></td></tr>
+              <tr><td>Nutstore Sync</td><td>nutstore</td><td><code><a href="https://github.com/nutstore/obsidian-nutstore-sync" target="_blank">nutstore/obsidian-nutstore-sync</a></code></td></tr>
+              <tr><td>Omnisearch</td><td>Simon Cambier</td><td><code><a href="https://github.com/scambier/obsidian-omnisearch" target="_blank">scambier/obsidian-omnisearch</a></code></td></tr>
+              <tr><td>Omnivore</td><td>omnivore-app</td><td><code><a href="https://github.com/omnivore-app/obsidian-omnivore" target="_blank">omnivore-app/obsidian-omnivore</a></code></td></tr>
+              <tr><td>Outliner</td><td>vslinko</td><td><code><a href="https://github.com/vslinko/obsidian-outliner" target="_blank">vslinko/obsidian-outliner</a></code></td></tr>
+              <tr><td>Pandoc Plugin</td><td>oliverbalfour</td><td><code><a href="https://github.com/OliverBalfour/obsidian-pandoc" target="_blank">OliverBalfour/obsidian-pandoc</a></code></td></tr>
+              <tr><td>Pane Relief</td><td>pjeby</td><td><code><a href="https://github.com/pjeby/pane-relief" target="_blank">pjeby/pane-relief</a></code></td></tr>
+              <tr><td>Password Protect</td><td>aspharmyx</td><td><code><a href="https://github.com/Aspharmyx/obsidian-password-protect" target="_blank">Aspharmyx/obsidian-password-protect</a></code></td></tr>
+              <tr><td>Paste image rename</td><td>reorx</td><td><code><a href="https://github.com/reorx/obsidian-paste-image-rename" target="_blank">reorx/obsidian-paste-image-rename</a></code></td></tr>
+              <tr><td>Paste URL into selection</td><td>denolehov</td><td><code><a href="https://github.com/denolehov/obsidian-url-into-selection" target="_blank">denolehov/obsidian-url-into-selection</a></code></td></tr>
+              <tr><td>PDF Highlights</td><td>akaalias</td><td><code><a href="https://github.com/akaalias/obsidian-extract-pdf-highlights" target="_blank">akaalias/obsidian-extract-pdf-highlights</a></code></td></tr>
+              <tr><td>PDF++</td><td>ryotaushio</td><td><code><a href="https://github.com/ryotaushio/obsidian-pdf-plus" target="_blank">ryotaushio/obsidian-pdf-plus</a></code></td></tr>
+              <tr><td>Periodic Notes</td><td>Liam Cain</td><td><code><a href="https://github.com/liamcain/obsidian-periodic-notes" target="_blank">liamcain/obsidian-periodic-notes</a></code></td></tr>
+              <tr><td>Pixel Banner</td><td>jparkerweb</td><td><code><a href="https://github.com/jparkerweb/pixel-banner" target="_blank">jparkerweb/pixel-banner</a></code></td></tr>
+              <tr><td>PlantUML</td><td>Johannes Theiner</td><td><code><a href="https://github.com/joethei/obsidian-plantuml" target="_blank">joethei/obsidian-plantuml</a></code></td></tr>
+              <tr><td>Plugin Update Tracker</td><td>swar8080</td><td><code><a href="https://github.com/swar8080/obsidian-plugin-update-tracker" target="_blank">swar8080/obsidian-plugin-update-tracker</a></code></td></tr>
+              <tr><td>Pretty Properties</td><td>Reaty</td><td><code><a href="https://github.com/anareaty/pretty-properties" target="_blank">anareaty/pretty-properties</a></code></td></tr>
+              <tr><td>Projects</td><td>marcusolsson</td><td><code><a href="https://github.com/marcusolsson/obsidian-projects" target="_blank">marcusolsson/obsidian-projects</a></code></td></tr>
+              <tr><td>Quick Explorer</td><td>pjeby</td><td><code><a href="https://github.com/pjeby/quick-explorer" target="_blank">pjeby/quick-explorer</a></code></td></tr>
+              <tr><td>Quick Latex</td><td>joeyuping</td><td><code><a href="https://github.com/joeyuping/quick_latex_obsidian" target="_blank">joeyuping/quick_latex_obsidian</a></code></td></tr>
+              <tr><td>Quick Switcher++</td><td>darlal</td><td><code><a href="https://github.com/darlal/obsidian-switcher-plus" target="_blank">darlal/obsidian-switcher-plus</a></code></td></tr>
+              <tr><td>QuickAdd</td><td>chhoumann</td><td><code><a href="https://github.com/chhoumann/quickadd" target="_blank">chhoumann/quickadd</a></code></td></tr>
+              <tr><td>Quiet Outline</td><td>guopenghui</td><td><code><a href="https://github.com/guopenghui/obsidian-quiet-outline" target="_blank">guopenghui/obsidian-quiet-outline</a></code></td></tr>
+              <tr><td>Reading Time</td><td>avr</td><td><code><a href="https://github.com/avr/obsidian-reading-time" target="_blank">avr/obsidian-reading-time</a></code></td></tr>
+              <tr><td>ReadItLater</td><td>dominikpieper</td><td><code><a href="https://github.com/dominikpieper/obsidian-ReadItLater" target="_blank">dominikpieper/obsidian-ReadItLater</a></code></td></tr>
+              <tr><td>Readwise Official</td><td>readwiseio</td><td><code><a href="https://github.com/readwiseio/obsidian-readwise" target="_blank">readwiseio/obsidian-readwise</a></code></td></tr>
+              <tr><td>Recent Files</td><td>tgrosinger</td><td><code><a href="https://github.com/tgrosinger/recent-files-obsidian" target="_blank">tgrosinger/recent-files-obsidian</a></code></td></tr>
+              <tr><td>Relative Line Numbers</td><td>nadavspi</td><td><code><a href="https://github.com/nadavspi/obsidian-relative-line-numbers" target="_blank">nadavspi/obsidian-relative-line-numbers</a></code></td></tr>
+              <tr><td>Relay</td><td>no-instructions</td><td><code><a href="https://github.com/no-instructions/Relay" target="_blank">no-instructions/Relay</a></code></td></tr>
+              <tr><td>Remember cursor position</td><td>dy-sh</td><td><code><a href="https://github.com/dy-sh/obsidian-remember-cursor-position" target="_blank">dy-sh/obsidian-remember-cursor-position</a></code></td></tr>
+              <tr><td>Reminder</td><td>uphy</td><td><code><a href="https://github.com/uphy/obsidian-reminder" target="_blank">uphy/obsidian-reminder</a></code></td></tr>
+              <tr><td>Remotely Save</td><td>remotely-save</td><td><code><a href="https://github.com/remotely-save/remotely-save" target="_blank">remotely-save/remotely-save</a></code></td></tr>
+              <tr><td>Rollover Daily Todos</td><td>lumoe</td><td><code><a href="https://github.com/lumoe/obsidian-rollover-daily-todos" target="_blank">lumoe/obsidian-rollover-daily-todos</a></code></td></tr>
+              <tr><td>RSS Dashboard</td><td>amatya-aditya</td><td><code><a href="https://github.com/amatya-aditya/obsidian-rss-dashboard" target="_blank">amatya-aditya/obsidian-rss-dashboard</a></code></td></tr>
+              <tr><td>Self-hosted LiveSync</td><td>vrtmrz</td><td><code><a href="https://github.com/vrtmrz/obsidian-livesync" target="_blank">vrtmrz/obsidian-livesync</a></code></td></tr>
+              <tr><td>Settings Search</td><td>javalent</td><td><code><a href="https://github.com/javalent/settings-search" target="_blank">javalent/settings-search</a></code></td></tr>
+              <tr><td>Share Note</td><td>Alan Grainger</td><td><code><a href="https://github.com/alangrainger/share-note" target="_blank">alangrainger/share-note</a></code></td></tr>
+              <tr><td>Sheet Plus</td><td>ljcoder</td><td><code><a href="https://github.com/ljcoder2015/obsidian-sheet-plus" target="_blank">ljcoder2015/obsidian-sheet-plus</a></code></td></tr>
+              <tr><td>Shell commands</td><td>taitava</td><td><code><a href="https://github.com/taitava/obsidian-shellcommands" target="_blank">taitava/obsidian-shellcommands</a></code></td></tr>
+              <tr><td>Simple CanvaSearch</td><td>ddalexb</td><td><code><a href="https://github.com/ddalexb/obsidian-simple-canvasearch" target="_blank">ddalexb/obsidian-simple-canvasearch</a></code></td></tr>
+              <tr><td>Smart Composer</td><td>glowingjade</td><td><code><a href="https://github.com/glowingjade/obsidian-smart-composer" target="_blank">glowingjade/obsidian-smart-composer</a></code></td></tr>
+              <tr><td>Smart Connections</td><td>🌴 Brian</td><td><code><a href="https://github.com/brianpetro/obsidian-smart-connections" target="_blank">brianpetro/obsidian-smart-connections</a></code></td></tr>
+              <tr><td>Smart Typography</td><td>mgmeyers</td><td><code><a href="https://github.com/mgmeyers/obsidian-smart-typography" target="_blank">mgmeyers/obsidian-smart-typography</a></code></td></tr>
+              <tr><td>Smarter Md Hotkeys</td><td>chrisgrieser</td><td><code><a href="https://github.com/chrisgrieser/obsidian-smarter-md-hotkeys" target="_blank">chrisgrieser/obsidian-smarter-md-hotkeys</a></code></td></tr>
+              <tr><td>Spaced Repetition</td><td>st3v3nmw</td><td><code><a href="https://github.com/st3v3nmw/obsidian-spaced-repetition" target="_blank">st3v3nmw/obsidian-spaced-repetition</a></code></td></tr>
+              <tr><td>Strange New Worlds</td><td>tfthacker</td><td><code><a href="https://github.com/tfthacker/obsidian42-strange-new-worlds" target="_blank">tfthacker/obsidian42-strange-new-worlds</a></code></td></tr>
+              <tr><td>Style Settings</td><td>mgmeyers</td><td><code><a href="https://github.com/mgmeyers/obsidian-style-settings" target="_blank">mgmeyers/obsidian-style-settings</a></code></td></tr>
+              <tr><td>Supercharged Links</td><td>mdelobelle</td><td><code><a href="https://github.com/mdelobelle/obsidian_supercharged_links" target="_blank">mdelobelle/obsidian_supercharged_links</a></code></td></tr>
+              <tr><td>Surfing</td><td>pkm-er</td><td><code><a href="https://github.com/pkm-er/Obsidian-Surfing" target="_blank">pkm-er/Obsidian-Surfing</a></code></td></tr>
+              <tr><td>Table of Contents</td><td>hipstersmoothie</td><td><code><a href="https://github.com/hipstersmoothie/obsidian-plugin-toc" target="_blank">hipstersmoothie/obsidian-plugin-toc</a></code></td></tr>
+              <tr><td>Tag Wrangler</td><td>pjeby</td><td><code><a href="https://github.com/pjeby/tag-wrangler" target="_blank">pjeby/tag-wrangler</a></code></td></tr>
+              <tr><td>TagFolder</td><td>vrtmrz</td><td><code><a href="https://github.com/vrtmrz/obsidian-tagfolder" target="_blank">vrtmrz/obsidian-tagfolder</a></code></td></tr>
+              <tr><td>Task Genius</td><td>taskgenius</td><td><code><a href="https://github.com/taskgenius/taskgenius-plugin" target="_blank">taskgenius/taskgenius-plugin</a></code></td></tr>
+              <tr><td>TaskNotes</td><td>callumalpass</td><td><code><a href="https://github.com/callumalpass/tasknotes" target="_blank">callumalpass/tasknotes</a></code></td></tr>
+              <tr><td>Tasks</td><td>obsidian-tasks-group</td><td><code><a href="https://github.com/obsidian-tasks-group/obsidian-tasks" target="_blank">obsidian-tasks-group/obsidian-tasks</a></code></td></tr>
+              <tr><td>Templater</td><td>silentvoid13</td><td><code><a href="https://github.com/SilentVoid13/Templater" target="_blank">SilentVoid13/Templater</a></code></td></tr>
+              <tr><td>Terminal</td><td>polyipseity</td><td><code><a href="https://github.com/polyipseity/obsidian-terminal" target="_blank">polyipseity/obsidian-terminal</a></code></td></tr>
+              <tr><td>Text Extractor</td><td>Simon Cambier</td><td><code><a href="https://github.com/scambier/obsidian-text-extractor" target="_blank">scambier/obsidian-text-extractor</a></code></td></tr>
+              <tr><td>Text Format</td><td>benature</td><td><code><a href="https://github.com/benature/obsidian-text-format" target="_blank">benature/obsidian-text-format</a></code></td></tr>
+              <tr><td>Text Generator</td><td>nhaouari</td><td><code><a href="https://github.com/nhaouari/obsidian-textgenerator-plugin" target="_blank">nhaouari/obsidian-textgenerator-plugin</a></code></td></tr>
+              <tr><td>Thino</td><td>quorafind</td><td><code><a href="https://github.com/Quorafind/Obsidian-Thino" target="_blank">Quorafind/Obsidian-Thino</a></code></td></tr>
+              <tr><td>Timeline</td><td>george-debug</td><td><code><a href="https://github.com/george-debug/obsidian-timeline" target="_blank">george-debug/obsidian-timeline</a></code></td></tr>
+              <tr><td>tldraw</td><td>tldraw</td><td><code><a href="https://github.com/tldraw/obsidian-plugin" target="_blank">tldraw/obsidian-plugin</a></code></td></tr>
+              <tr><td>Todoist Sync</td><td>jamiebrynes7</td><td><code><a href="https://github.com/jamiebrynes7/obsidian-todoist-plugin" target="_blank">jamiebrynes7/obsidian-todoist-plugin</a></code></td></tr>
+              <tr><td>Tracker</td><td>pyrochlore</td><td><code><a href="https://github.com/pyrochlore/obsidian-tracker" target="_blank">pyrochlore/obsidian-tracker</a></code></td></tr>
+              <tr><td>Typewriter Mode</td><td>davisriedel</td><td><code><a href="https://github.com/davisriedel/obsidian-typewriter-mode" target="_blank">davisriedel/obsidian-typewriter-mode</a></code></td></tr>
+              <tr><td>Typewriter Scroll</td><td>deathau</td><td><code><a href="https://github.com/deathau/cm-typewriter-scroll-obsidian" target="_blank">deathau/cm-typewriter-scroll-obsidian</a></code></td></tr>
+              <tr><td>Various Complements</td><td>tadashi-aikawa</td><td><code><a href="https://github.com/tadashi-aikawa/obsidian-various-complements-plugin" target="_blank">tadashi-aikawa/obsidian-various-complements-plugin</a></code></td></tr>
+              <tr><td>Vimrc Support</td><td>esm7</td><td><code><a href="https://github.com/esm7/obsidian-vimrc-support" target="_blank">esm7/obsidian-vimrc-support</a></code></td></tr>
+              <tr><td>Waypoint</td><td>Idrees</td><td><code><a href="https://github.com/idreesinc/Waypoint" target="_blank">idreesinc/Waypoint</a></code></td></tr>
+              <tr><td>Webpage HTML Export</td><td>kosmosisdire</td><td><code><a href="https://github.com/kosmosisdire/obsidian-webpage-export" target="_blank">kosmosisdire/obsidian-webpage-export</a></code></td></tr>
+              <tr><td>Weread</td><td>zhaohongxuan</td><td><code><a href="https://github.com/zhaohongxuan/obsidian-weread-plugin" target="_blank">zhaohongxuan/obsidian-weread-plugin</a></code></td></tr>
+              <tr><td>Zoom</td><td>vslinko</td><td><code><a href="https://github.com/vslinko/obsidian-zoom" target="_blank">vslinko/obsidian-zoom</a></code></td></tr>
+              <tr><td>Zoottelkeeper Plugin</td><td>akosbalasko</td><td><code><a href="https://github.com/akosbalasko/zoottelkeeper-obsidian-plugin" target="_blank">akosbalasko/zoottelkeeper-obsidian-plugin</a></code></td></tr>
+              <tr><td>Zotero Integration</td><td>obsidian-community</td><td><code><a href="https://github.com/obsidian-community/obsidian-zotero-integration" target="_blank">obsidian-community/obsidian-zotero-integration</a></code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         KNOWN LIMITATIONS
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-limitations">
+      <h2>Known Limitations</h2>
+      <p>What's deliberately out of scope for v1.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Limitation</th><th>Why it's fine for now</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>No file integrity checks</strong></td>
+              <td>Checksums/signatures are noted in the format spec as a future addition — the version-entry format has room for it without a breaking change.</td>
+            </tr>
+            <tr>
+              <td><strong>No access control / TLS</strong></td>
+              <td>The mirror is assumed to run on a trusted internal network — an nginx config concern, orthogonal to the file format.</td>
+            </tr>
+            <tr>
+              <td><strong>A pruned version can 404</strong></td>
+              <td>Only affects showing "what version am I on" — the install/update flow itself is unaffected.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         DESIGN SPECS
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-specs">
+      <h2>Design Specs</h2>
+      <p>Full technical detail behind each subsystem.</p>
+      <div class="card-grid">
+        <div class="card">
+          <h4>Shared format</h4>
+          <p>Directory layout and JSON schemas — the only contract between the two subsystems.</p>
+          <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md">→ Read the spec</a>
+        </div>
+        <div class="card">
+          <h4>mirror-builder design</h4>
+          <p>Pipeline, config schema, incremental-run behavior, error handling.</p>
+          <a class="go" href="superpowers/specs/2026-07-23-mirror-builder-design.md">→ Read the spec</a>
+        </div>
+        <div class="card">
+          <h4>Installer plugin design</h4>
+          <p>Module breakdown, data model, browse/install/update/remove flows.</p>
+          <a class="go" href="superpowers/specs/2026-07-23-obsidian-installer-plugin-design.md">→ Read the spec</a>
+        </div>
+        <div class="card">
+          <h4>Minimum stable retention</h4>
+          <p>Why a burst of prereleases could crowd out every stable version, and the <code>minStableRetain</code> floor that fixes it.</p>
+          <a class="go" href="superpowers/specs/2026-07-23-min-stable-retain-design.md">→ Read the spec</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         CHANGELOG
+    ══════════════════════════════════════════════════════════════════ -->
+    <section class="section" id="section-changelog">
+      <h2>Changelog</h2>
+
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.4</div>
+        <h3>Installed/available name consistency</h3>
+        <ul>
+          <li><span class="cl-tag cl-fix">Fix</span> The "Installed" list showed the raw plugin id while "Available" showed the registry's human-readable name for the same plugin. <code>TrackedPlugin</code> now stores and self-heals a <code>name</code> field, backfilled for plugins tracked before this fix.</li>
         </ul>
-        <a class="go" href="https://github.com/khchiang1121/obsidian-plugin-mirror/tree/main/mirror-builder">mirror-builder/</a>
       </div>
-      <div class="card sheet">
-        <h3>obsidian-installer-plugin</h3>
-        <p>
-          A standard Obsidian community plugin. Lists everything in the
-          mirror's registry with an Install action, tracks installed mirrored
-          plugins independently of Obsidian's own manifest, and checks for
-          updates on startup and on demand — respecting a per-plugin
-          prerelease opt-in and independently toggleable auto-check /
-          auto-install settings.
-        </p>
-        <ul class="stack">
-          <li>TypeScript</li>
-          <li>esbuild</li>
-          <li>vitest · 30 tests</li>
+
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.3</div>
+        <h3>Settings tab render ordering</h3>
+        <ul>
+          <li><span class="cl-tag cl-fix">Fix</span> On a fresh launch, the settings tab could render the installed list before the update check finished, so the "Install update" button just wasn't there yet on first paint. It now awaits the check before rendering, with a loading placeholder shown meanwhile.</li>
         </ul>
-        <a class="go" href="https://github.com/khchiang1121/obsidian-plugin-mirror/tree/main/obsidian-installer-plugin">obsidian-installer-plugin/</a>
       </div>
-    </div>
-  </section>
 
-  <section>
-    <div class="sheet-label">Sheet 04<span class="rule"></span>quick start</div>
-    <h2>Build the mirror, then install the plugin</h2>
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">01</span><strong>Configure and build the mirror</strong></div>
-      <div class="term">
-        <div class="term-bar">mirror-builder/</div>
-        <pre><code>npm install
-cp tracked-plugins.example.json tracked-plugins.json   # edit with real owner/repo entries
-export GITHUB_TOKEN=ghp_xxx                             # optional, raises the rate limit
-npm run build:image                                      # fetch releases, then docker build</code></pre>
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.2</div>
+        <h3>Startup adoption + update check</h3>
+        <ul>
+          <li><span class="cl-tag cl-fix">Fix</span> Adoption of externally-installed plugins previously only ran when the settings tab was opened. <code>checkForUpdates</code> now adopts on every trigger path — startup, the manual button, and the command palette entry.</li>
+        </ul>
       </div>
-    </div>
 
-    <div class="step">
-      <div class="step-head"><span class="step-num">02</span><strong>Run it on the internal network</strong></div>
-      <div class="term">
-        <div class="term-bar">shell</div>
-        <pre><code>docker run -d --name plugin-mirror -p 8080:80 obsidian-plugin-mirror</code></pre>
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.1</div>
+        <h3>Manifest author fallback</h3>
+        <ul>
+          <li><span class="cl-tag cl-fix">Fix</span> A <code>manifest.json</code> missing the optional <code>author</code> field (not required by Obsidian to load a plugin) no longer excludes that plugin from <code>index.json</code> entirely — falls back to the GitHub repo owner.</li>
+        </ul>
       </div>
-    </div>
 
-    <div class="step">
-      <div class="step-head"><span class="step-num">03</span><strong>Install the vault plugin</strong></div>
-      <div class="term">
-        <div class="term-bar">obsidian-installer-plugin/</div>
-        <pre><code>npm install
-npm run build   # typechecks, then bundles src/main.ts -> main.js</code></pre>
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.0</div>
+        <h3>Initial release</h3>
+        <ul>
+          <li><span class="cl-tag cl-feat">Feature</span> Browse, install, update, and remove plugins from the mirror's registry — including a per-plugin prerelease opt-in and independently toggleable auto-check / auto-install settings.</li>
+        </ul>
       </div>
-      <p>
-        Copy <code>manifest.json</code>, <code>main.js</code>, and <code>versions.json</code>
-        into <code>&lt;vault&gt;/.obsidian/plugins/obsidian-mirror-installer/</code>, enable it
-        from Community Plugins, then set the mirror's address in the plugin's settings tab.
-      </p>
-    </div>
-  </section>
 
-  <section>
-    <div class="sheet-label">Sheet 05<span class="rule"></span>known limitations · v1</div>
-    <h2>What's deliberately out of scope for now</h2>
-    <div class="table-wrap">
-      <table class="limitations">
-        <tr><th>Limitation</th><th>Why it's fine for now</th></tr>
-        <tr>
-          <td>No file integrity checks</td>
-          <td>Checksums/signatures are noted in the format spec as a future
-              addition — the version-entry format has room for it without a
-              breaking change.</td>
-        </tr>
-        <tr>
-          <td>No access control / TLS</td>
-          <td>The mirror is assumed to run on a trusted internal network —
-              an nginx config concern, orthogonal to the file format.</td>
-        </tr>
-        <tr>
-          <td>A pruned version can 404</td>
-          <td>Only affects showing "what version am I on" — the install/update
-              flow itself is unaffected.</td>
-        </tr>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <div class="sheet-label">Sheet 06<span class="rule"></span>further reading</div>
-    <h2>Design specs</h2>
-    <div class="card-grid">
-      <div class="card sheet">
-        <h3>Shared format</h3>
-        <p>Directory layout and JSON schemas — the only contract between the two subsystems.</p>
-        <a class="go" href="superpowers/specs/2026-07-23-mirror-format-design.md">Read the spec</a>
+      <div class="cl-entry">
+        <div class="cl-date">mirror-builder</div>
+        <h3>Ongoing fixes</h3>
+        <ul>
+          <li><span class="cl-tag cl-feat">Feature</span> <code>defaultMinStableRetain</code> — a floor that guarantees N non-prerelease versions are always retained, even if a burst of prereleases would otherwise crowd them out of the plain <code>retain</code> window.</li>
+          <li><span class="cl-tag cl-fix">Fix</span> A malformed <code>manifest.json</code> on one plugin no longer crashes the whole run — that plugin is skipped with a warning instead.</li>
+          <li><span class="cl-tag cl-fix">Fix</span> Stale entries are removed from <code>tracked-plugins.json</code> automatically instead of accumulating.</li>
+        </ul>
       </div>
-      <div class="card sheet">
-        <h3>mirror-builder design</h3>
-        <p>Pipeline, config schema, incremental-run behavior, error handling.</p>
-        <a class="go" href="superpowers/specs/2026-07-23-mirror-builder-design.md">Read the spec</a>
-      </div>
-      <div class="card sheet">
-        <h3>Installer plugin design</h3>
-        <p>Module breakdown, data model, browse/install/update/remove flows.</p>
-        <a class="go" href="superpowers/specs/2026-07-23-obsidian-installer-plugin-design.md">Read the spec</a>
-      </div>
-    </div>
-  </section>
+    </section>
 
-</main>
+    <footer class="page-footer">
+      <span>khchiang1121/obsidian-plugin-mirror</span>
+      <span>View source on <a href="https://github.com/khchiang1121/obsidian-plugin-mirror" target="_blank">GitHub</a></span>
+    </footer>
 
-<footer>
-  <span>khchiang1121/obsidian-plugin-mirror</span>
-  <a href="https://github.com/khchiang1121/obsidian-plugin-mirror">github.com/khchiang1121/obsidian-plugin-mirror</a>
-</footer>
+  </div><!-- .content -->
+</div><!-- .main -->
+
+<script>
+  // ── Theme toggle ──────────────────────────────────────────────────────
+  const html = document.documentElement;
+
+  function applyTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+
+  (function () {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') {
+      applyTheme(saved);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      applyTheme('dark');
+    }
+  })();
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  // ── Navigation ────────────────────────────────────────────────────────
+  const navLinks = document.querySelectorAll('.nav-link[data-section]');
+  const sections = document.querySelectorAll('.section');
+  const crumb = document.getElementById('breadcrumb');
+
+  const TITLES = {
+    overview: 'Overview', quickstart: 'Quick Start',
+    architecture: 'Architecture', format: 'Shared Format',
+    plugins: 'Tracked Plugins', limitations: 'Known Limitations',
+    specs: 'Design Specs', changelog: 'Changelog',
+  };
+
+  function navigate(id) {
+    sections.forEach(s => s.classList.remove('active'));
+    navLinks.forEach(l => l.classList.remove('active'));
+
+    const sec = document.getElementById('section-' + id);
+    if (sec) { sec.classList.add('active'); window.scrollTo({ top: 0, behavior: 'instant' }); }
+
+    const lnk = document.querySelector(`.nav-link[data-section="${id}"]`);
+    if (lnk) lnk.classList.add('active');
+
+    crumb.innerHTML = `Docs / <strong>${TITLES[id] || id}</strong>`;
+    history.pushState(null, '', '#' + id);
+  }
+
+  navLinks.forEach(l => l.addEventListener('click', e => {
+    e.preventDefault();
+    navigate(l.dataset.section);
+    document.getElementById('sidebar').classList.remove('open');
+  }));
+
+  document.querySelector('.content').addEventListener('click', e => {
+    const a = e.target.closest('a[data-section]');
+    if (a) { e.preventDefault(); navigate(a.dataset.section); }
+  });
+
+  const hash = location.hash.slice(1);
+  if (hash && TITLES[hash]) navigate(hash);
+</script>
+
+</body>
+</html>
