@@ -528,7 +528,7 @@
       <span class="topbar-crumb" id="breadcrumb">Docs / <strong>Overview</strong></span>
     </div>
     <div class="topbar-right">
-      <span class="topbar-badge">installer v1.0.4</span>
+      <span class="topbar-badge">installer v1.0.5</span>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">
         <span class="icon-moon">🌙</span>
         <span class="icon-sun">☀️</span>
@@ -1046,6 +1046,15 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
       <h2>Changelog</h2>
 
       <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.5</div>
+        <h3>Registry list not showing the full mirror, and slow to load</h3>
+        <ul>
+          <li><span class="cl-tag cl-fix">Fix</span> Obsidian's <code>requestUrl</code> (Electron's Chromium network stack) was silently serving a stale cached response for <code>index.json</code>/<code>versions.json</code> instead of hitting the network — confirmed by stopping the mirror server entirely and seeing the plugin still return old, non-deterministic counts instead of erroring. Every request now carries a unique cache-busting query param plus explicit <code>Cache-Control</code>/<code>Pragma: no-cache</code> headers.</li>
+          <li><span class="cl-tag cl-fix">Fix</span> Adoption (disk reads) and the per-plugin update check (network fetches) both ran fully sequentially, one entry at a time — with the registry now at 200+ plugins, that was hundreds of chained <code>await</code>s before the rest of settings could render. Both now run concurrently via <code>Promise.all</code>.</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.4</div>
         <h3>Installed/available name consistency</h3>
         <ul>
@@ -1087,8 +1096,10 @@ npm run build   <span class="cmt"># typechecks, then bundles src/main.ts -> main
 
       <div class="cl-entry">
         <div class="cl-date">mirror-builder</div>
-        <h3>Ongoing fixes</h3>
+        <h3>Ongoing fixes and tooling</h3>
         <ul>
+          <li><span class="cl-tag cl-feat">Feature</span> <code>sync-top-plugins</code> script (<code>npm run sync-top-plugins -- --top 200</code>) — ranks Obsidian's community plugins by download count and appends any not already tracked. Additive only by default; a repo that appears to have moved to a new owner is reported, not double-tracked, unless <code>--replace-moved</code> is passed.</li>
+          <li><span class="cl-tag cl-feat">Feature</span> <code>tracked-plugins.json</code> expanded from 45 to 208 plugins — every plugin in the top 200 by download count.</li>
           <li><span class="cl-tag cl-feat">Feature</span> <code>defaultMinStableRetain</code> — a floor that guarantees N non-prerelease versions are always retained, even if a burst of prereleases would otherwise crowd them out of the plain <code>retain</code> window.</li>
           <li><span class="cl-tag cl-fix">Fix</span> A malformed <code>manifest.json</code> on one plugin no longer crashes the whole run — that plugin is skipped with a warning instead.</li>
           <li><span class="cl-tag cl-fix">Fix</span> Stale entries are removed from <code>tracked-plugins.json</code> automatically instead of accumulating.</li>
