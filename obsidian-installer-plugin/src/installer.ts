@@ -7,11 +7,32 @@ export interface VaultAdapterLike {
   write(path: string, data: string): Promise<void>;
   rmdir(path: string, recursive: boolean): Promise<void>;
   read(path: string): Promise<string>;
+  /**
+   * Obsidian's real DataAdapter.exists is a documented public method,
+   * unlike everything in PluginManagerLike below — used to authoritatively
+   * check whether a path is actually gone (see
+   * pruneUninstalledTrackedPlugins), rather than inferring absence from a
+   * read() failure, which could just as easily mean a transient/unrelated
+   * read error and shouldn't be treated the same as "no longer installed".
+   */
+  exists(path: string): Promise<boolean>;
 }
 
 export interface PluginManagerLike {
   enablePlugin(id: string): Promise<void>;
   disablePlugin(id: string): Promise<void>;
+  /**
+   * Rescans .obsidian/plugins/*\/manifest.json — the same internal method
+   * Obsidian's own Community Plugins page calls from its manual reload
+   * button. Not in the public Obsidian API (undocumented, like
+   * enablePlugin/disablePlugin above), but well-established via BRAT's use
+   * of it for exactly this problem: without it, a brand-new plugin folder
+   * isn't recognized until the user manually reloads that native page, and
+   * an updated plugin's new version isn't reflected there either, since
+   * enable/disable manage the running instance, not this separate manifest
+   * cache.
+   */
+  loadManifests(): Promise<void>;
 }
 
 export interface InstallableVersion {
@@ -61,6 +82,21 @@ export async function installPluginVersion(
   fetchFn: FetchLike = fetch
 ): Promise<void> {
   await downloadPluginFiles(adapter, mirrorBaseUrl, pluginId, version, fetchFn);
+  // Rescan first, so Obsidian's manifest cache reflects what's actually on
+  // disk (both for a brand-new plugin id it's never seen, and for an
+  // updated version number) before touching the enabled state at all.
+  await pluginManager.loadManifests();
+  // A disable+enable cycle, not just enable — enabling an already-enabled
+  // plugin is a no-op in Obsidian's own implementation (matches BRAT's
+  // approach to the same problem), which would otherwise leave the old
+  // code running in memory even after the manifest rescan above.
+  // disablePlugin is expected to throw harmlessly here on a fresh install
+  // (nothing enabled yet to disable) — proceed to enable either way.
+  try {
+    await pluginManager.disablePlugin(pluginId);
+  } catch {
+    // Not currently enabled — fine, fall through to enable below.
+  }
   await pluginManager.enablePlugin(pluginId);
 }
 
@@ -127,4 +163,32 @@ export async function removePlugin(
 ): Promise<void> {
   await pluginManager.disablePlugin(pluginId);
   await adapter.rmdir(`.obsidian/plugins/${pluginId}`, true);
+  // Keeps Obsidian's own manifest cache in sync with what we just deleted —
+  // same reasoning as installPluginVersion's rescan.
+  await pluginManager.loadManifests();
+}
+
+/**
+ * Mirror image of adoptUntrackedInstalledPlugins: removes tracked entries
+ * whose manifest.json can no longer be read from disk — e.g. removed via
+ * Obsidian's own Community Plugins page, which has no knowledge of our
+ * separate trackedPlugins data and so never updates it. Without this, a
+ * plugin removed that way keeps showing as "installed" here indefinitely,
+ * with whatever version was last cached. Mutates trackedPlugins in place
+ * and returns the ids that were pruned.
+ */
+export async function pruneUninstalledTrackedPlugins(
+  adapter: VaultAdapterLike,
+  trackedPlugins: Record<string, TrackedPlugin>
+): Promise<string[]> {
+  const ids = Object.keys(trackedPlugins);
+  const prunedIds = await Promise.all(
+    ids.map(async (id): Promise<string | null> => {
+      const stillExists = await adapter.exists(`.obsidian/plugins/${id}/manifest.json`);
+      if (stillExists) return null;
+      delete trackedPlugins[id];
+      return id;
+    })
+  );
+  return prunedIds.filter((id): id is string => id !== null);
 }

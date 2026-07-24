@@ -145,11 +145,11 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     // to break the alignment between the heading and the rows.
     const installedGroup = containerEl.createDiv({ cls: 'setting-group' });
     const installedHeading = new Setting(installedGroup).setName(t('installed.heading')).setHeading();
-    installedGroup.createEl('p', { text: t('installed.checking') });
+    installedGroup.createDiv({ cls: 'setting-items' }).createEl('p', { text: t('installed.checking') });
 
     const registryGroup = containerEl.createDiv({ cls: 'setting-group' });
     const registryHeading = new Setting(registryGroup).setName(t('registry.heading')).setHeading();
-    registryGroup.createEl('p', { text: t('registry.loading') });
+    registryGroup.createDiv({ cls: 'setting-items' }).createEl('p', { text: t('registry.loading') });
 
     void this.loadPluginLists(
       selfVersionSetting,
@@ -258,7 +258,9 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
       entries = index.plugins;
     } catch (error) {
       this.clearGroupBody(registryGroup, registryHeadingEl);
-      registryGroup.createEl('p', { text: t('registry.loadError', { message: (error as Error).message }) });
+      registryGroup
+        .createDiv({ cls: 'setting-items' })
+        .createEl('p', { text: t('registry.loadError', { message: (error as Error).message }) });
       this.renderInstalledPlugins(installedGroup, installedHeadingEl);
       return;
     }
@@ -303,6 +305,18 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
           try {
             await downloadSelfUpdate(this.getAdapter(), this.plugin.settings.mirrorBaseUrl, selfId, this.plugin.fetchFn);
             new Notice(t('notice.selfUpdated', { version: result.version }), 10000);
+            // Files are on disk, but this plugin's own running code is still
+            // the old version — hot-swapping it in place isn't safe (see
+            // downloadSelfUpdate's docs), so offer the actual reload here
+            // instead of just telling the user to do it themselves.
+            setting.setDesc(t('self.status.updateInstalled', { version: result.version }));
+            setting.controlEl.empty();
+            setting.addButton((reloadButton) =>
+              reloadButton
+                .setButtonText(t('self.button.reload'))
+                .setCta()
+                .onClick(() => this.reloadObsidian())
+            );
           } catch (error) {
             new Notice(t('notice.selfUpdateFailed', { message: (error as Error).message }));
           }
@@ -310,11 +324,23 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     );
   }
 
+  /**
+   * "Reload app without saving" (app:reload) — the same command available
+   * from Obsidian's own command palette. Not in the public API (like the
+   * PluginManagerLike cast above for enablePlugin/disablePlugin), so this
+   * is an unofficial cast onto app.commands.
+   */
+  private reloadObsidian(): void {
+    (this.app as unknown as { commands: { executeCommandById(id: string): boolean } }).commands.executeCommandById(
+      'app:reload'
+    );
+  }
+
   private renderInstalledPlugins(groupEl: HTMLElement, headingEl: HTMLElement): void {
     this.clearGroupBody(groupEl, headingEl);
     const tracked = this.plugin.settings.trackedPlugins;
     if (Object.keys(tracked).length === 0) {
-      groupEl.createEl('p', { text: t('installed.empty') });
+      groupEl.createDiv({ cls: 'setting-items' }).createEl('p', { text: t('installed.empty') });
       return;
     }
 

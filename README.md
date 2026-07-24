@@ -83,7 +83,7 @@ Each subsystem is an independent npm package with its own test suite:
 
 ```bash
 cd mirror-builder && npm test              # 61 tests, vitest
-cd obsidian-installer-plugin && npm test   # 69 tests, vitest
+cd obsidian-installer-plugin && npm test   # 77 tests, vitest
 ```
 
 Design specs and implementation plans for both subsystems live under [`docs/superpowers/`](docs/superpowers).

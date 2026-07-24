@@ -26,7 +26,15 @@ function versionsHandler(repo: string, versions: unknown[]) {
 class FakeAdapter implements VaultAdapterLike {
   writes: Array<{ path: string; data: string }> = [];
 
-  constructor(private manifestVersions: Record<string, string> = {}) {}
+  // removedIds is a separate, explicit opt-in (rather than exists()
+  // defaulting to "whatever's in manifestVersions") so every existing test
+  // that never intended to exercise pruneUninstalledTrackedPlugins keeps
+  // behaving as if every tracked plugin is still installed, regardless of
+  // whether it bothered to also register a manifestVersions entry.
+  constructor(
+    private manifestVersions: Record<string, string> = {},
+    private removedIds: string[] = []
+  ) {}
 
   async mkdir(): Promise<void> {}
   async write(path: string, data: string): Promise<void> {
@@ -41,6 +49,11 @@ class FakeAdapter implements VaultAdapterLike {
     }
     throw new Error('ENOENT: no such file');
   }
+  async exists(path: string): Promise<boolean> {
+    const match = /\.obsidian\/plugins\/([^/]+)\/manifest\.json$/.exec(path);
+    const pluginId = match?.[1];
+    return pluginId ? !this.removedIds.includes(pluginId) : true;
+  }
 }
 
 class FakePluginManager implements PluginManagerLike {
@@ -49,6 +62,7 @@ class FakePluginManager implements PluginManagerLike {
     this.enabled.push(id);
   }
   async disablePlugin(): Promise<void> {}
+  async loadManifests(): Promise<void> {}
 }
 
 describe('checkForUpdates', () => {
@@ -363,6 +377,29 @@ describe('checkForUpdates', () => {
       'other-plugin': { repo: 'acme/other-plugin', installedVersion: '1.0.0', allowPrerelease: false },
     });
     expect(results).toEqual([{ pluginId: 'other-plugin', status: 'up-to-date' }]);
+  });
+
+  it('stops tracking a plugin removed via Obsidian\'s own Community Plugins page, instead of checking a stale entry', async () => {
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'still-here': { repo: 'acme/still-here', installedVersion: '1.0.0', allowPrerelease: false },
+      'removed-externally': { repo: 'acme/removed-externally', installedVersion: '1.0.0', allowPrerelease: false },
+    };
+    server.use(
+      versionsHandler('acme/still-here', [
+        { version: '1.0.0', prerelease: false, publishedAt: '2026-01-01T00:00:00Z', files: ['manifest.json'] },
+      ])
+    );
+    // acme/removed-externally deliberately has no versions.json handler —
+    // if checkForUpdates still tried to check it, this would surface as an
+    // 'error' result instead of the plugin simply being gone from the list.
+    const adapter = new FakeAdapter({}, ['removed-externally']);
+
+    const results = await checkForUpdates(MIRROR, trackedPlugins, adapter, fetch);
+
+    expect(trackedPlugins).toEqual({
+      'still-here': { repo: 'acme/still-here', installedVersion: '1.0.0', allowPrerelease: false },
+    });
+    expect(results).toEqual([{ pluginId: 'still-here', status: 'up-to-date' }]);
   });
 });
 

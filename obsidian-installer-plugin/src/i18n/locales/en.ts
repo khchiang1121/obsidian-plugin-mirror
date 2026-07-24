@@ -22,7 +22,9 @@ export const en = {
   'self.status.error': 'Installed v{version} — failed to check for updates: {message}',
   'self.status.upToDate': 'Installed v{version} — up to date.',
   'self.status.updateAvailable': 'Installed v{version} — update available: v{newVersion}',
+  'self.status.updateInstalled': 'Updated to v{version} — reload Obsidian to finish.',
   'self.button.update': 'Update',
+  'self.button.reload': 'Reload Obsidian',
 
   'installed.heading': 'Installed mirrored plugins',
   'installed.checking': 'Checking installed mirrored plugins for updates…',

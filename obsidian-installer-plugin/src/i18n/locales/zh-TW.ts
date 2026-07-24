@@ -22,7 +22,9 @@ export const zhTW: Record<keyof typeof en, string> = {
   'self.status.error': '已安裝 v{version} — 檢查更新失敗：{message}',
   'self.status.upToDate': '已安裝 v{version} — 已是最新版本。',
   'self.status.updateAvailable': '已安裝 v{version} — 有可用更新：v{newVersion}',
+  'self.status.updateInstalled': '已更新至 v{version} — 請重新載入 Obsidian 以完成套用。',
   'self.button.update': '更新',
+  'self.button.reload': '重新載入 Obsidian',
 
   'installed.heading': '已安裝的鏡像外掛',
   'installed.checking': '正在檢查已安裝的鏡像外掛是否有更新…',

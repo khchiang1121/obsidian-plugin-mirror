@@ -5,6 +5,7 @@ import {
   removePlugin,
   readInstalledManifestVersion,
   adoptUntrackedInstalledPlugins,
+  pruneUninstalledTrackedPlugins,
   type VaultAdapterLike,
   type PluginManagerLike,
 } from '../src/installer';
@@ -32,17 +33,24 @@ class FakeAdapter implements VaultAdapterLike {
     }
     return this.files[path];
   }
+  async exists(path: string): Promise<boolean> {
+    return path in this.files;
+  }
 }
 
 class FakePluginManager implements PluginManagerLike {
   enabled: string[] = [];
   disabled: string[] = [];
+  manifestLoadCount = 0;
 
   async enablePlugin(id: string): Promise<void> {
     this.enabled.push(id);
   }
   async disablePlugin(id: string): Promise<void> {
     this.disabled.push(id);
+  }
+  async loadManifests(): Promise<void> {
+    this.manifestLoadCount++;
   }
 }
 
@@ -130,6 +138,7 @@ describe('installPluginVersion', () => {
       write: adapter.write.bind(adapter),
       rmdir: adapter.rmdir.bind(adapter),
       read: adapter.read.bind(adapter),
+      exists: adapter.exists.bind(adapter),
     };
     const fetchFn = fakeFetch({ 'manifest.json': '{}' });
     await installPluginVersion(
@@ -141,6 +150,70 @@ describe('installPluginVersion', () => {
       fetchFn
     );
     expect(pluginManager.enabled).toEqual(['acme-plugin']);
+  });
+
+  it('disables then re-enables the plugin, not just enables — updating an already-enabled plugin is a no-op in Obsidian if you only call enablePlugin', async () => {
+    const fetchFn = fakeFetch({ 'manifest.json': '{"id":"acme"}' });
+    await installPluginVersion(
+      adapter,
+      pluginManager,
+      'https://plugins.internal.example.test',
+      'acme-plugin',
+      { repo: 'acme/plugin', version: '2.0.0', files: ['manifest.json'] },
+      fetchFn
+    );
+
+    expect(pluginManager.disabled).toEqual(['acme-plugin']);
+    expect(pluginManager.enabled).toEqual(['acme-plugin']);
+  });
+
+  it('still enables the plugin even if disablePlugin throws (fresh install — nothing to disable yet)', async () => {
+    const fetchFn = fakeFetch({ 'manifest.json': '{"id":"acme"}' });
+    const neverEnabledManager: PluginManagerLike = {
+      enablePlugin: pluginManager.enablePlugin.bind(pluginManager),
+      disablePlugin: async () => {
+        throw new Error('not enabled');
+      },
+      loadManifests: pluginManager.loadManifests.bind(pluginManager),
+    };
+
+    await installPluginVersion(
+      adapter,
+      neverEnabledManager,
+      'https://plugins.internal.example.test',
+      'acme-plugin',
+      { repo: 'acme/plugin', version: '1.0.0', files: ['manifest.json'] },
+      fetchFn
+    );
+
+    expect(pluginManager.enabled).toEqual(['acme-plugin']);
+  });
+
+  it('rescans manifests before touching enabled state, so a brand-new plugin folder is recognized', async () => {
+    const fetchFn = fakeFetch({ 'manifest.json': '{"id":"acme"}' });
+    const callOrder: string[] = [];
+    const orderTrackingManager: PluginManagerLike = {
+      enablePlugin: async (id) => {
+        callOrder.push(`enable:${id}`);
+      },
+      disablePlugin: async (id) => {
+        callOrder.push(`disable:${id}`);
+      },
+      loadManifests: async () => {
+        callOrder.push('loadManifests');
+      },
+    };
+
+    await installPluginVersion(
+      adapter,
+      orderTrackingManager,
+      'https://plugins.internal.example.test',
+      'acme-plugin',
+      { repo: 'acme/plugin', version: '1.0.0', files: ['manifest.json'] },
+      fetchFn
+    );
+
+    expect(callOrder).toEqual(['loadManifests', 'disable:acme-plugin', 'enable:acme-plugin']);
   });
 });
 
@@ -177,10 +250,11 @@ describe('downloadPluginFiles', () => {
 });
 
 describe('removePlugin', () => {
-  it('disables the plugin and removes its directory', async () => {
+  it('disables the plugin, removes its directory, and rescans manifests', async () => {
     await removePlugin(adapter, pluginManager, 'acme-plugin');
     expect(pluginManager.disabled).toEqual(['acme-plugin']);
     expect(adapter.rmdirCalls).toEqual([{ path: '.obsidian/plugins/acme-plugin', recursive: true }]);
+    expect(pluginManager.manifestLoadCount).toBe(1);
   });
 });
 
@@ -302,6 +376,7 @@ describe('adoptUntrackedInstalledPlugins', () => {
       mkdir: adapter.mkdir.bind(adapter),
       write: adapter.write.bind(adapter),
       rmdir: adapter.rmdir.bind(adapter),
+      exists: adapter.exists.bind(adapter),
       read: async (path: string) => {
         inFlight++;
         maxInFlight = Math.max(maxInFlight, inFlight);
@@ -328,5 +403,32 @@ describe('adoptUntrackedInstalledPlugins', () => {
       Array.from({ length: entryCount / 2 }, (_, i) => `plugin-${i * 2}`).sort()
     );
     expect(Object.keys(trackedPlugins)).toHaveLength(entryCount / 2);
+  });
+});
+
+describe('pruneUninstalledTrackedPlugins', () => {
+  it('removes a tracked entry whose manifest.json can no longer be read, e.g. removed via Obsidian\'s own Community Plugins page', async () => {
+    adapter.files['.obsidian/plugins/still-here/manifest.json'] = JSON.stringify({ version: '1.0.0' });
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'still-here': { repo: 'acme/still-here', installedVersion: '1.0.0', allowPrerelease: false },
+      'removed-externally': { repo: 'acme/removed-externally', installedVersion: '1.0.0', allowPrerelease: false },
+    };
+
+    const pruned = await pruneUninstalledTrackedPlugins(adapter, trackedPlugins);
+
+    expect(pruned).toEqual(['removed-externally']);
+    expect(Object.keys(trackedPlugins)).toEqual(['still-here']);
+  });
+
+  it('leaves trackedPlugins untouched when everything is still installed', async () => {
+    adapter.files['.obsidian/plugins/acme-plugin/manifest.json'] = JSON.stringify({ version: '1.0.0' });
+    const trackedPlugins: Record<string, TrackedPlugin> = {
+      'acme-plugin': { repo: 'acme/plugin', installedVersion: '1.0.0', allowPrerelease: false },
+    };
+
+    const pruned = await pruneUninstalledTrackedPlugins(adapter, trackedPlugins);
+
+    expect(pruned).toEqual([]);
+    expect(Object.keys(trackedPlugins)).toEqual(['acme-plugin']);
   });
 });

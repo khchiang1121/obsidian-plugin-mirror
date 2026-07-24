@@ -63,6 +63,7 @@ describe('downloadSelfUpdate', () => {
       },
       rmdir: async () => {},
       read: async () => '',
+      exists: async () => true,
     };
 
     await downloadSelfUpdate(adapter, MIRROR, 'obsidian-mirror-installer');
@@ -73,7 +74,13 @@ describe('downloadSelfUpdate', () => {
 
   it('throws when a file fails to download', async () => {
     server.use(http.get(`${MIRROR}/self/manifest.json`, () => HttpResponse.json({}, { status: 404 })));
-    const adapter: VaultAdapterLike = { mkdir: async () => {}, write: async () => {}, rmdir: async () => {}, read: async () => '' };
+    const adapter: VaultAdapterLike = {
+      mkdir: async () => {},
+      write: async () => {},
+      rmdir: async () => {},
+      read: async () => '',
+      exists: async () => true,
+    };
     await expect(downloadSelfUpdate(adapter, MIRROR, 'obsidian-mirror-installer')).rejects.toThrow();
   });
 });

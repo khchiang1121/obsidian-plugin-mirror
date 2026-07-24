@@ -4,6 +4,7 @@ import {
   installPluginVersion,
   readInstalledManifestVersion,
   adoptUntrackedInstalledPlugins,
+  pruneUninstalledTrackedPlugins,
   type VaultAdapterLike,
   type PluginManagerLike,
 } from './installer';
@@ -32,6 +33,13 @@ export async function checkForUpdates(
   for (const id of excludeIds) {
     delete trackedPlugins[id];
   }
+
+  // Stops tracking anything removed via Obsidian's own Community Plugins
+  // page (or any other means outside this plugin) — its manifest.json is
+  // gone, so it's no longer actually installed regardless of what's cached
+  // here. Pure disk reads, so this runs unconditionally, not gated on the
+  // registry fetch below.
+  await pruneUninstalledTrackedPlugins(adapter, trackedPlugins);
 
   try {
     // Pick up plugins installed by other means (Obsidian's built-in browser,
