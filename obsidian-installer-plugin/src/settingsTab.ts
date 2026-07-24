@@ -10,6 +10,7 @@ import {
 } from './installer';
 import { checkSelfUpdate, downloadSelfUpdate } from './selfUpdate';
 import type { TrackedPlugin } from './settings';
+import { startWalkingPenguin, type PenguinController } from './penguin';
 import { t } from './i18n';
 
 export class MirrorInstallerSettingTab extends PluginSettingTab {
@@ -18,6 +19,8 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   private registrySearchQuery = '';
   private advancedPopoverEl: HTMLElement | null = null;
   private advancedPopoverCleanup: (() => void) | null = null;
+  private penguin: PenguinController | null = null;
+  private globalAdvancedExpanded = false;
 
   constructor(app: App, plugin: MirrorInstallerPlugin) {
     super(app, plugin);
@@ -33,14 +36,34 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
   }
 
   hide(): void {
-    // The popover is attached to document.body (see openAdvancedPopover), so
-    // it wouldn't otherwise be cleaned up by Obsidian closing this tab's own
-    // containerEl.
+    // The popover and the penguin are both attached to document.body (see
+    // openAdvancedPopover / startWalkingPenguin), so neither would otherwise
+    // be cleaned up by Obsidian closing this tab's own containerEl.
     this.closeAdvancedPopover();
+    this.penguin?.stop();
+    this.penguin = null;
+  }
+
+  /**
+   * (Re)starts the penguin controller from current settings. Called once
+   * per tab-open from display() (guarded so re-renders while the tab stays
+   * open don't cut off a mid-walk penguin), and again, unconditionally,
+   * whenever the settings below actually change — so toggling either one
+   * takes effect immediately instead of requiring the tab to be reopened.
+   */
+  private applyPenguinSettings(): void {
+    this.penguin?.stop();
+    this.penguin = startWalkingPenguin(document.body, this.containerEl, {
+      enabled: this.plugin.settings.showPenguin,
+      ignoreReducedMotion: this.plugin.settings.penguinIgnoreReducedMotion,
+    });
   }
 
   display(): void {
     this.closeAdvancedPopover();
+    if (!this.penguin) {
+      this.applyPenguinSettings();
+    }
     const { containerEl } = this;
     containerEl.empty();
 
@@ -90,6 +113,28 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
         })
       );
 
+    // Same native .setting-group + .setHeading() pattern as the
+    // Installed/Available groups below — a visually separate section, kept
+    // out of the main top-level settings list above. Collapsed by default;
+    // the heading row's own button reveals the actual settings, rather than
+    // showing them unconditionally. Expanding/collapsing only re-renders
+    // this group's own body (see renderAdvancedItems) — it must NOT call
+    // this.display(), which would also re-run loadPluginLists() (a fresh
+    // runUpdateCheck()/fetchIndex() and a full Installed/Available
+    // rebuild) just to toggle a visibility flag.
+    const advancedGroup = containerEl.createDiv({ cls: 'setting-group' });
+    const advancedHeading = new Setting(advancedGroup).setName(t('settings.advanced.heading')).setHeading();
+    advancedHeading.addButton((button) =>
+      button
+        .setButtonText(this.globalAdvancedExpanded ? t('settings.advanced.hide') : t('settings.advanced.show'))
+        .onClick(() => {
+          this.globalAdvancedExpanded = !this.globalAdvancedExpanded;
+          button.setButtonText(this.globalAdvancedExpanded ? t('settings.advanced.hide') : t('settings.advanced.show'));
+          this.renderAdvancedItems(advancedGroup, advancedHeading.settingEl);
+        })
+    );
+    this.renderAdvancedItems(advancedGroup, advancedHeading.settingEl);
+
     // Matches Obsidian's own native "Installed plugins" DOM exactly:
     // .setting-group directly containing .setting-item.setting-item-heading,
     // then the search row, then a .setting-items wrapper for the rows — all
@@ -124,6 +169,45 @@ export class MirrorInstallerSettingTab extends PluginSettingTab {
     for (const child of Array.from(groupEl.children)) {
       if (child !== headingEl) child.remove();
     }
+  }
+
+  /**
+   * The Advanced group's collapsible body — cleared and rebuilt on its own
+   * (via clearGroupBody, same as Installed/Registry) whenever the expand
+   * state changes, independent of the rest of the settings tab. The
+   * heading row itself (and its Show/Hide button, added separately in
+   * display()) is left untouched.
+   */
+  private renderAdvancedItems(groupEl: HTMLElement, headingEl: HTMLElement): void {
+    this.clearGroupBody(groupEl, headingEl);
+    if (!this.globalAdvancedExpanded) return;
+
+    // Same .setting-items wrapper the Installed/Available rows use below —
+    // without it, these render at the wider top-level .setting-item width
+    // instead of the narrower grouped-list width.
+    const advancedItems = groupEl.createDiv({ cls: 'setting-items' });
+
+    new Setting(advancedItems)
+      .setName(t('settings.showPenguin.name'))
+      .setDesc(t('settings.showPenguin.desc'))
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.showPenguin).onChange(async (value) => {
+          this.plugin.settings.showPenguin = value;
+          await this.plugin.saveSettings();
+          this.applyPenguinSettings();
+        })
+      );
+
+    new Setting(advancedItems)
+      .setName(t('settings.penguinIgnoreReducedMotion.name'))
+      .setDesc(t('settings.penguinIgnoreReducedMotion.desc'))
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.penguinIgnoreReducedMotion).onChange(async (value) => {
+          this.plugin.settings.penguinIgnoreReducedMotion = value;
+          await this.plugin.saveSettings();
+          this.applyPenguinSettings();
+        })
+      );
   }
 
   /**

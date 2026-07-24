@@ -14,6 +14,12 @@ describe('mergeSettings', () => {
     expect(merged.autoInstallUpdates).toBe(DEFAULT_SETTINGS.autoInstallUpdates);
   });
 
+  it('defaults the penguin easter egg to shown, and reduced-motion respected', () => {
+    const merged = mergeSettings(null);
+    expect(merged.showPenguin).toBe(true);
+    expect(merged.penguinIgnoreReducedMotion).toBe(false);
+  });
+
   it('preserves loaded trackedPlugins entries', () => {
     const merged = mergeSettings({
       trackedPlugins: {

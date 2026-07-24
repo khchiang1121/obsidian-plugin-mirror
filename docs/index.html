@@ -549,7 +549,7 @@
       <span class="topbar-crumb" id="breadcrumb">Docs / <strong>Overview</strong></span>
     </div>
     <div class="topbar-right">
-      <span class="topbar-badge">installer v1.0.10</span>
+      <span class="topbar-badge">installer v1.0.11</span>
       <button class="lang-toggle" id="langToggle" aria-label="Switch language" title="Switch language / 切換語言">
         <span data-i18n="en">中文</span><span data-i18n="zh-TW">English</span>
       </button>
@@ -1146,6 +1146,15 @@ npm run build   <span class="cmt"><span data-i18n="en"># typechecks, then bundle
     ══════════════════════════════════════════════════════════════════ -->
     <section class="section" id="section-changelog">
       <h2><span data-i18n="en">Changelog</span><span data-i18n="zh-TW">更新日誌</span></h2>
+
+      <div class="cl-entry">
+        <div class="cl-date">obsidian-installer-plugin v1.0.11</div>
+        <h3><span data-i18n="en">🐧 A walking penguin easter egg</span><span data-i18n="zh-TW">🐧 走路企鵝彩蛋</span></h3>
+        <ul>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">A small custom SVG penguin occasionally wanders across the bottom of the settings page — confined to the page's own visible area, not the whole Obsidian window. Purely decorative, built with the Web Animations API (no stylesheet). First appearance is 10s after opening the tab; later ones are spaced 20–60s apart, each disappearing once it finishes crossing.</span><span data-i18n="zh-TW">設定頁面底部偶爾會有一隻自訂 SVG 小企鵝走過——僅限於該頁面本身的可視範圍內走動，不會跑到整個 Obsidian 視窗。純屬裝飾用途，以 Web Animations API 實作（不需要樣式表）。開啟頁籤後 10 秒會第一次出現，之後每隔 20–60 秒隨機再次出現，每次走到底就會消失。</span></li>
+          <li><span class="cl-tag cl-feat"><span data-i18n="en">Feature</span><span data-i18n="zh-TW">新功能</span></span> <span data-i18n="en">Respects <code>prefers-reduced-motion</code> by default (hidden if your system requests reduced motion). Two new toggles under a collapsed-by-default <strong>Advanced</strong> section let you turn the easter egg off entirely, or show it anyway despite reduced motion.</span><span data-i18n="zh-TW">預設會遵循 <code>prefers-reduced-motion</code> 設定（若系統要求減少動態效果，就不會顯示）。在預設收合的<strong>進階</strong>區塊中新增了兩個開關，可以完全關閉這個彩蛋，或是即使系統要求減少動態效果也強制顯示。</span></li>
+        </ul>
+      </div>
 
       <div class="cl-entry">
         <div class="cl-date">obsidian-installer-plugin v1.0.10</div>

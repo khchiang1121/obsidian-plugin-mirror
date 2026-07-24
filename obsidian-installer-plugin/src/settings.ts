@@ -10,6 +10,8 @@ export interface PluginSettings {
   autoCheckOnStartup: boolean;
   autoInstallUpdates: boolean;
   trackedPlugins: Record<string, TrackedPlugin>;
+  showPenguin: boolean;
+  penguinIgnoreReducedMotion: boolean;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -17,6 +19,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   autoCheckOnStartup: true,
   autoInstallUpdates: true,
   trackedPlugins: {},
+  showPenguin: true,
+  penguinIgnoreReducedMotion: false,
 };
 
 export function mergeSettings(loaded: Partial<PluginSettings> | null | undefined): PluginSettings {

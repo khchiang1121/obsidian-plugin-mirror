@@ -7,6 +7,15 @@ export const en = {
     "Applies to other plugins installed through this tool. Mirror Installer's own updates always require a manual click above, since applying one needs an Obsidian reload.",
   'settings.checkNow.name': 'Check for updates now',
   'settings.checkNow.button': 'Check now',
+  'settings.advanced.heading': 'Advanced',
+  'settings.advanced.show': 'Show',
+  'settings.advanced.hide': 'Hide',
+  'settings.showPenguin.name': 'Show walking penguin easter egg',
+  'settings.showPenguin.desc':
+    'A small decorative penguin occasionally wanders across this settings page. Purely cosmetic — has no effect on plugin functionality.',
+  'settings.penguinIgnoreReducedMotion.name': 'Show penguin even with reduced motion enabled',
+  'settings.penguinIgnoreReducedMotion.desc':
+    "By default the penguin is hidden if your system requests reduced motion. Enable this to show it anyway.",
 
   'self.name': 'Mirror Installer version',
   'self.status.checking': 'Installed v{version} — checking for updates…',

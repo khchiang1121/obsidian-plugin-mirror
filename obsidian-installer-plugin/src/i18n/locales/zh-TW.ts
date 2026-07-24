@@ -9,6 +9,13 @@ export const zhTW: Record<keyof typeof en, string> = {
     '僅適用於透過本工具安裝的其他外掛。Mirror Installer 本身的更新一律需要在上方手動點擊，因為套用更新需要重新載入 Obsidian。',
   'settings.checkNow.name': '立即檢查更新',
   'settings.checkNow.button': '立即檢查',
+  'settings.advanced.heading': '進階設定',
+  'settings.advanced.show': '顯示',
+  'settings.advanced.hide': '隱藏',
+  'settings.showPenguin.name': '顯示走路企鵝彩蛋',
+  'settings.showPenguin.desc': '一隻裝飾用的小企鵝偶爾會在這個設定頁面上走動。純粹裝飾用途，不影響外掛功能。',
+  'settings.penguinIgnoreReducedMotion.name': '即使開啟「減少動態效果」也顯示企鵝',
+  'settings.penguinIgnoreReducedMotion.desc': '預設情況下，如果系統要求減少動態效果，企鵝就不會出現。開啟此選項可強制顯示。',
 
   'self.name': 'Mirror Installer 版本',
   'self.status.checking': '已安裝 v{version} — 正在檢查更新…',
